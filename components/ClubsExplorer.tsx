@@ -1,19 +1,26 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useMemo, useState } from "react";
+import { AGE_BANDS, GENDERS, clubs, listingTags, type Club } from "@/data/clubs";
 import {
   FILTERS,
   offerColor,
   parseSearch,
   postcodeDistrict,
-  searchClubs,
+  searchListings,
   sessionCount,
   type FilterId,
   type SortId,
 } from "@/lib/search";
 import { AccessTag, PhotoSlot, Tag } from "./Media";
+
+const ClubsMap = dynamic(() => import("./ClubsMap"), {
+  ssr: false,
+  loading: () => <div className="leaflet-host" aria-hidden="true" />,
+});
 
 function toggleFilter(current: FilterId[], id: FilterId) {
   return current.includes(id)
@@ -21,19 +28,32 @@ function toggleFilter(current: FilterId[], id: FilterId) {
     : [...current, id];
 }
 
-export function ClubsExplorer() {
+export function ClubsExplorer({
+  listings = clubs,
+  heading = "Find your sport near",
+  noun = "club",
+  detailBasePath = "/clubs",
+  suggestNoun = "club",
+}: {
+  listings?: Club[];
+  heading?: string;
+  noun?: string;
+  detailBasePath?: string;
+  suggestNoun?: string;
+}) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const [mapOpen, setMapOpen] = useState(true);
   const [saved, setSaved] = useState(false);
+  const [selectedSlug, setSelectedSlug] = useState<string | null>(null);
 
   const state = useMemo(
     () => parseSearch(Object.fromEntries(searchParams.entries())),
     [searchParams],
   );
 
-  const results = useMemo(() => searchClubs(state), [state]);
+  const results = useMemo(() => searchListings(state, listings), [state, listings]);
 
   function update(next: Record<string, string | undefined>) {
     const params = new URLSearchParams(searchParams.toString());
@@ -45,7 +65,16 @@ export function ClubsExplorer() {
     router.push(query ? `${pathname}?${query}` : pathname, { scroll: false });
   }
 
+  function selectListing(slug: string) {
+    setSelectedSlug(slug);
+    document.getElementById(`listing-${slug}`)?.scrollIntoView({
+      behavior: "smooth",
+      block: "nearest",
+    });
+  }
+
   const district = postcodeDistrict(state.postcode);
+  const nounPlural = noun === "club" ? "clubs" : `${noun}s`;
 
   return (
     <>
@@ -63,11 +92,11 @@ export function ClubsExplorer() {
           }}
         >
           <h1 className="display h1-clubs">
-            Find a club near{" "}
+            {heading}{" "}
             <span className="gradient-text">{district}</span>
           </h1>
           <div style={{ fontSize: 14, color: "rgba(247,245,255,.6)" }}>
-            Free to search. No account. Club contact details shown in full.
+            Free to search. No account. Contact details shown in full.
           </div>
         </div>
         <form
@@ -80,28 +109,29 @@ export function ClubsExplorer() {
               postcode: String(form.get("postcode") || "SO14 3ZE"),
               radius: String(form.get("radius") || "5"),
               day: String(form.get("day") || "any"),
+              age: String(form.get("age") || "any"),
             });
           }}
         >
-          <label className="search-field" style={{ flex: 1.3 }}>
+          <label className="search-field" style={{ flex: 1.2 }}>
             <span className="field-label">Sport or activity</span>
             <input name="q" defaultValue={state.q} placeholder="Netball" key={state.q} />
           </label>
-          <label className="search-field" style={{ flex: 0.9 }}>
+          <label className="search-field" style={{ flex: 0.8 }}>
             <span className="field-label">Postcode</span>
-            <input name="postcode" defaultValue={state.postcode} />
+            <input name="postcode" defaultValue={state.postcode} key={state.postcode} />
           </label>
-          <label className="search-field" style={{ flex: 0.7 }}>
+          <label className="search-field" style={{ flex: 0.6 }}>
             <span className="field-label">Within</span>
-            <select name="radius" defaultValue={state.radius}>
+            <select name="radius" defaultValue={state.radius} key={state.radius}>
               <option value="2">2 miles</option>
               <option value="5">5 miles</option>
               <option value="10">10 miles</option>
             </select>
           </label>
-          <label className="search-field" style={{ flex: 0.7, borderRight: 0 }}>
+          <label className="search-field" style={{ flex: 0.6 }}>
             <span className="field-label">Day</span>
-            <select name="day" defaultValue={state.day}>
+            <select name="day" defaultValue={state.day} key={state.day}>
               <option value="any">Any day</option>
               <option value="mon">Monday</option>
               <option value="tue">Tuesday</option>
@@ -112,34 +142,58 @@ export function ClubsExplorer() {
               <option value="sun">Sunday</option>
             </select>
           </label>
+          <label className="search-field" style={{ flex: 0.7, borderRight: 0 }}>
+            <span className="field-label">Age</span>
+            <select name="age" defaultValue={state.age || "any"} key={state.age}>
+              <option value="any">Anyone</option>
+              {AGE_BANDS.map((band) => (
+                <option key={band.id} value={band.id}>
+                  {band.label}
+                </option>
+              ))}
+            </select>
+          </label>
           <button className="btn-gradient" type="submit">
             Search
           </button>
         </form>
         <div className="chip-row">
-          <span
-            style={{
-              fontSize: 12,
-              letterSpacing: "0.14em",
-              textTransform: "uppercase",
-              color: "rgba(247,245,255,.45)",
-              marginRight: 4,
-            }}
+          <span className="chip-legend">Gender</span>
+          {GENDERS.map((option) => {
+            const active = state.gender === option.id;
+            return (
+              <button
+                key={option.id}
+                type="button"
+                className={active ? "chip active" : "chip"}
+                aria-pressed={active}
+                onClick={() => update({ gender: active ? undefined : option.id })}
+              >
+                {option.label}
+                {active ? " ✕" : ""}
+              </button>
+            );
+          })}
+          <span className="chip-legend">Access</span>
+          <button
+            type="button"
+            className={state.accessible === "yes" ? "chip active-blue" : "chip"}
+            aria-pressed={state.accessible === "yes"}
+            onClick={() =>
+              update({ accessible: state.accessible === "yes" ? undefined : "yes" })
+            }
           >
-            Filters
-          </span>
-          {FILTERS.map((filter, index) => {
+            Accessible
+            {state.accessible === "yes" ? " ✕" : ""}
+          </button>
+          <span className="chip-legend">More</span>
+          {FILTERS.map((filter) => {
             const active = state.filters.includes(filter.id);
-            const className = active
-              ? index === 1
-                ? "chip active-blue"
-                : "chip active"
-              : "chip";
             return (
               <button
                 key={filter.id}
                 type="button"
-                className={className}
+                className={active ? "chip active" : "chip"}
                 aria-pressed={active}
                 onClick={() =>
                   update({
@@ -176,7 +230,7 @@ export function ClubsExplorer() {
           >
             <div style={{ fontSize: 14, color: "rgba(247,245,255,.7)" }}>
               <strong style={{ color: "#F7F5FF", fontSize: 16 }}>
-                {results.length} club{results.length === 1 ? "" : "s"}
+                {results.length} {results.length === 1 ? noun : nounPlural}
               </strong>{" "}
               · {sessionCount(results)} sessions within {state.radius} miles
             </div>
@@ -202,87 +256,81 @@ export function ClubsExplorer() {
           </div>
 
           <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-            {results.length === 0 ? null : (
-              results.map((club) => (
-                <Link
-                  key={club.slug}
-                  href={`/clubs/${club.slug}`}
-                  className="result-card"
-                  style={{
-                    borderLeftColor: offerColor(club.offer),
-                    transform: `rotate(${club.tilt}deg)`,
-                    ["--tilt" as string]: `${club.tilt}deg`,
-                  }}
-                >
-                  <PhotoSlot label="1:1" className="result-thumb" />
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div
-                      style={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        alignItems: "flex-start",
-                        gap: 12,
-                      }}
-                    >
-                      <div>
-                        <div
-                          className="display"
-                          style={{ fontSize: 22, lineHeight: 1.1 }}
-                        >
-                          {club.name}
-                        </div>
-                        <div
-                          style={{
-                            fontSize: 13,
-                            color: "rgba(247,245,255,.62)",
-                            marginTop: 5,
-                          }}
-                        >
-                          {club.venue} · {club.distanceMiles} miles · {club.days}
-                        </div>
+            {results.map((club) => (
+              <Link
+                key={club.slug}
+                id={`listing-${club.slug}`}
+                href={`${detailBasePath}/${club.slug}`}
+                className={`result-card${selectedSlug === club.slug ? " selected" : ""}`}
+                style={{
+                  borderLeftColor: offerColor(club.offer),
+                  transform: `rotate(${club.tilt}deg)`,
+                  ["--tilt" as string]: `${club.tilt}deg`,
+                }}
+                onMouseEnter={() => setSelectedSlug(club.slug)}
+              >
+                <PhotoSlot label="1:1" className="result-thumb" />
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "flex-start",
+                      gap: 12,
+                    }}
+                  >
+                    <div>
+                      <div className="display" style={{ fontSize: 22, lineHeight: 1.1 }}>
+                        {club.name}
                       </div>
-                      <div style={{ textAlign: "right", flex: "none" }}>
-                        <div
-                          className="display"
-                          style={{
-                            fontSize: 18,
-                            color:
-                              club.offer === "free-taster" ? "#FFC94D" : undefined,
-                          }}
-                        >
-                          {club.priceLabel}
-                        </div>
-                        <div
-                          style={{
-                            fontSize: 12,
-                            color: "rgba(247,245,255,.55)",
-                            marginTop: 3,
-                          }}
-                        >
-                          {club.priceNote}
-                        </div>
+                      <div
+                        style={{
+                          fontSize: 13,
+                          color: "rgba(247,245,255,.62)",
+                          marginTop: 5,
+                        }}
+                      >
+                        {club.venue} · {club.distanceMiles} miles · {club.days}
                       </div>
                     </div>
-                    <div className="tags" style={{ marginTop: 12 }}>
-                      {club.tags.map((tag) => (
-                        <Tag key={tag.label} {...tag} />
-                      ))}
-                      <AccessTag verified={club.accessVerified} />
+                    <div style={{ textAlign: "right", flex: "none" }}>
+                      <div
+                        className="display"
+                        style={{
+                          fontSize: 18,
+                          color: club.offer === "free-taster" ? "#FFC94D" : undefined,
+                        }}
+                      >
+                        {club.priceLabel}
+                      </div>
+                      <div
+                        style={{
+                          fontSize: 12,
+                          color: "rgba(247,245,255,.55)",
+                          marginTop: 3,
+                        }}
+                      >
+                        {club.priceNote}
+                      </div>
                     </div>
                   </div>
-                </Link>
-              ))
-            )}
+                  <div className="tags" style={{ marginTop: 12 }}>
+                    {listingTags(club).map((tag) => (
+                      <Tag key={tag.label} {...tag} />
+                    ))}
+                    <AccessTag verified={club.accessVerified} />
+                  </div>
+                </div>
+              </Link>
+            ))}
 
-            <div className="honesty-card">
+            <div className={`honesty-card${results.length === 0 ? " honesty-card-empty" : ""}`}>
               <div>
                 <div
                   className="display"
                   style={{ fontSize: 18, color: "#FFC94D", marginBottom: 5 }}
                 >
-                  {results.length === 0
-                    ? "Nothing listed for that search yet"
-                    : "Not seeing your local club?"}
+                  Know a {suggestNoun} that should be on here?
                 </div>
                 <div
                   style={{
@@ -291,13 +339,13 @@ export function ClubsExplorer() {
                     maxWidth: "56ch",
                   }}
                 >
-                  We know of 60 more clubs in Hampshire we haven&apos;t listed
-                  yet — mostly because nobody&apos;s answered the phone. Send us
-                  a name and we&apos;ll keep trying.
+                  {results.length === 0
+                    ? "Nothing matched that search. Send us a name and we'll chase it."
+                    : `We're still adding ${nounPlural} across Hampshire. If yours isn't listed, tell us.`}
                 </div>
               </div>
               <Link href="/suggest" className="btn-sun">
-                Suggest a club
+                Suggest a {suggestNoun}
               </Link>
             </div>
           </div>
@@ -306,31 +354,14 @@ export function ClubsExplorer() {
         <aside className={`map-rail${mapOpen ? "" : " collapsed"}`}>
           <div className="map-sticky">
             <div className="map-panel">
-              <span
-                style={{
-                  position: "absolute",
-                  left: 22,
-                  top: 20,
-                  font: "500 11px ui-monospace, Menlo, monospace",
-                  color: "rgba(247,245,255,.5)",
-                }}
-              >
-                map — Southampton, {state.radius} mile radius
-              </span>
-              {results.map((club) => (
-                <span
-                  key={club.slug}
-                  className="pin"
-                  style={{
-                    left: club.pin.left,
-                    top: club.pin.top,
-                    background: offerColor(club.offer),
-                    width: club.offer === "free-taster" ? 34 : 30,
-                    height: club.offer === "free-taster" ? 34 : 30,
-                  }}
-                  title={club.name}
+              {mapOpen ? (
+                <ClubsMap
+                  listings={results}
+                  selectedSlug={selectedSlug}
+                  detailBasePath={detailBasePath}
+                  onSelect={selectListing}
                 />
-              ))}
+              ) : null}
             </div>
             <div
               style={{

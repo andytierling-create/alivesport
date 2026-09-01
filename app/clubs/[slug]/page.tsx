@@ -2,7 +2,13 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { AccessTag, PhotoSlot, Tag } from "@/components/Media";
-import { clubs, getClub } from "@/data/clubs";
+import {
+  accessFlagLabel,
+  ageBandLabel,
+  clubs,
+  genderLabel,
+  getClub,
+} from "@/data/clubs";
 
 type Props = {
   params: Promise<{ slug: string }>;
@@ -37,10 +43,36 @@ export default async function ClubPage({ params }: Props) {
           {club.venue} · {club.distanceMiles} miles from SO14
         </p>
         <PhotoSlot label="club photo 4:3" ratio="4 / 3" />
+
+        <dl className="listing-facts">
+          <div>
+            <dt>Age bands</dt>
+            <dd>{club.ageBands.map(ageBandLabel).join(", ")}</dd>
+          </div>
+          <div>
+            <dt>Who it&apos;s for</dt>
+            <dd>{genderLabel(club.gender)}</dd>
+          </div>
+          <div>
+            <dt>Accessible</dt>
+            <dd>{club.accessible ? "Yes" : "No"}</dd>
+          </div>
+        </dl>
+
         <div className="tags" style={{ marginTop: 20 }}>
           {club.tags.map((tag) => (
             <Tag key={tag.label} {...tag} />
           ))}
+          {club.accessFlags
+            .filter(
+              (flag) =>
+                !club.tags.some(
+                  (tag) => tag.label.toLowerCase() === accessFlagLabel(flag).toLowerCase(),
+                ),
+            )
+            .map((flag) => (
+              <Tag key={flag} label={accessFlagLabel(flag)} tone="sun" />
+            ))}
           <AccessTag verified={club.accessVerified} />
         </div>
 

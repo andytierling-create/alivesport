@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { AGE_BANDS } from "@/data/clubs";
 
 export function HomeSearch() {
   return (
@@ -11,13 +12,22 @@ export function HomeSearch() {
         <span className="field-label">Near</span>
         <input name="postcode" defaultValue="SO14 3ZE" />
       </label>
-      <label className="search-field" style={{ flex: 0.7, borderRight: 0 }}>
+      <label className="search-field" style={{ flex: 0.65 }}>
         <span className="field-label">Who for</span>
-        <select name="age" defaultValue="8-12">
+        <select name="age" defaultValue="any">
           <option value="any">Anyone</option>
-          <option value="8-12">Ages 8–12</option>
-          <option value="14+">Ages 14+</option>
-          <option value="over-60">Over 60s</option>
+          {AGE_BANDS.map((band) => (
+            <option key={band.id} value={band.id}>
+              {band.label}
+            </option>
+          ))}
+        </select>
+      </label>
+      <label className="search-field" style={{ flex: 0.7, borderRight: 0 }}>
+        <span className="field-label">Disability</span>
+        <select name="accessible" defaultValue="">
+          <option value="">Any</option>
+          <option value="yes">Accessible</option>
         </select>
       </label>
       <button className="btn-gradient" type="submit">
@@ -31,7 +41,7 @@ const popular = [
   { q: "Junior netball", label: "Junior netball" },
   { q: "Wheelchair basketball", label: "Wheelchair basketball" },
   { q: "Women's beginner running", label: "Women's beginner running" },
-  { q: "Over-60s swim", label: "Over-60s swim" },
+  { q: "Seniors swim", label: "Seniors swim" },
 ];
 
 export function PopularChips() {

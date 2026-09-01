@@ -3,7 +3,7 @@ import { Suspense } from "react";
 import { ClubsExplorer } from "@/components/ClubsExplorer";
 
 export const metadata: Metadata = {
-  title: "Find a club",
+  title: "Find your sport",
 };
 
 export default function ClubsPage() {

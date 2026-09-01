@@ -7,8 +7,9 @@ import { BrandLockup } from "./Brand";
 
 const links = [
   { href: "/clubs", label: "Find a club", match: "/clubs" },
+  { href: "/wellness", label: "Wellness", match: "/wellness" },
   { href: "/clubs", label: "What's on", match: "/whats-on" },
-  { href: "/#for-clubs", label: "For clubs", match: "/#for-clubs" },
+  { href: "/for-clubs", label: "For clubs", match: "/for-clubs" },
   { href: "/about", label: "About us", match: "/about" },
 ];
 
@@ -33,7 +34,7 @@ export function Header() {
           const active =
             link.match === "/clubs"
               ? pathname.startsWith("/clubs") && link.label === "Find a club"
-              : pathname === link.match;
+              : pathname === link.match || pathname.startsWith(`${link.match}/`);
           return (
             <Link
               key={link.label}
@@ -46,7 +47,7 @@ export function Header() {
           );
         })}
         <Link
-          href="/#for-clubs"
+          href="/for-clubs"
           className="btn-cta"
           onClick={() => setOpen(false)}
         >

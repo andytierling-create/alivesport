@@ -15,15 +15,16 @@ export function Footer() {
         <div className="footer-links">
           <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
             <Link href="/clubs">Find a club</Link>
+            <Link href="/wellness">Wellness</Link>
             <Link href="/clubs">What&apos;s on</Link>
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
-            <Link href="/#for-clubs">For clubs</Link>
-            <Link href="/#for-clubs">Pricing</Link>
+            <Link href="/for-clubs">For clubs</Link>
+            <Link href="/for-clubs">Pricing</Link>
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
             <Link href="/about">About us</Link>
-            <Link href="/about#unfinished">What&apos;s not built</Link>
+            <Link href="/suggest">Suggest a club</Link>
           </div>
         </div>
       </div>

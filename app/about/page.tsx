@@ -1,17 +1,11 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { PhotoSlot } from "@/components/Media";
-import { roadmap, roadmapUpdated } from "@/data/roadmap";
+import { AIM_STATEMENT } from "@/data/copy";
 
 export const metadata: Metadata = {
   title: "About us",
 };
-
-const statusColor = {
-  shipped: "#3B96DC",
-  "in-progress": "#FFC94D",
-  "not-started": "#FF2FA7",
-} as const;
 
 export default function AboutPage() {
   return (
@@ -28,11 +22,13 @@ export default function AboutPage() {
             </span>
             , trying to get more of Hampshire playing.
           </h1>
+          <p className="aim-statement">{AIM_STATEMENT}</p>
           <p className="hero-sub" style={{ maxWidth: "56ch", marginBottom: 0 }}>
-            We started Alive Sport because finding a local club shouldn&apos;t
-            mean three Facebook groups, a dead phone number and a PDF from 2019.
-            And because the clubs doing the work are run by volunteers who
-            don&apos;t have a marketing budget.
+            Finding a local club shouldn&apos;t mean three Facebook groups, a
+            dead phone number and a PDF from 2019. And the clubs doing the work
+            shouldn&apos;t need a marketing budget to be found. Alive Sport is
+            for both: people looking for a place to play, and clubs ready to
+            welcome them.
           </p>
         </div>
       </section>
@@ -48,7 +44,7 @@ export default function AboutPage() {
         <div className="skew-inner" style={{ transform: "skewY(2.2deg)", alignItems: "center", gap: 44 }}>
           <div style={{ flex: 1.15 }}>
             <h2 className="h2 h2-sm" style={{ marginBottom: 18 }}>
-              Sport is for everyone — said by nearly everyone, designed for by almost no one.
+              Built so more people play — and so more clubs get found.
             </h2>
             <p
               style={{
@@ -59,12 +55,11 @@ export default function AboutPage() {
                 maxWidth: "50ch",
               }}
             >
-              Participation drops off hardest for four groups: children whose
-              parents can&apos;t find anything nearby, women and girls who
-              don&apos;t want their first session to be competitive, disabled
-              people who can&apos;t find out whether the door is even step-free,
-              and older adults who&apos;ve been quietly told sport is over for
-              them.
+              We design the search around four groups who are too often an
+              afterthought: children, women and girls, disabled people, and
+              older adults. Clear age bands, beginner and women-only sessions,
+              accessibility details before you travel, daytime and seniors
+              slots — stated up front.
             </p>
             <p
               style={{
@@ -75,9 +70,11 @@ export default function AboutPage() {
                 maxWidth: "50ch",
               }}
             >
-              Our mark has three athletes in it and one of them is in a
-              wheelchair, in the middle, celebrating with the others. That&apos;s
-              not a badge — it&apos;s the brief.
+              For clubs, that same listing is a proper profile: findable by
+              people who don&apos;t already follow you, with room to share
+              what&apos;s on. Our mark has three athletes in it and one of them
+              is in a wheelchair, in the middle, celebrating with the others.
+              That&apos;s the brief for both sides.
             </p>
           </div>
           <PhotoSlot
@@ -95,9 +92,9 @@ export default function AboutPage() {
               Honesty
             </h3>
             <p style={{ margin: 0, fontSize: 14.5, lineHeight: 1.6, color: "rgba(247,245,255,.72)" }}>
-              If a club&apos;s details are unverified, the listing says so. If a
-              feature doesn&apos;t exist, we don&apos;t put a screenshot of it on
-              the homepage.
+              If a club&apos;s details are unverified, the listing says so. We
+              would rather a short, true page than a polished one that hides
+              the gaps.
             </p>
           </article>
           <article className="value-card" style={{ transform: "rotate(.9deg)", ["--accent" as string]: "#3B96DC" }}>
@@ -114,8 +111,8 @@ export default function AboutPage() {
               Improvement
             </h3>
             <p style={{ margin: 0, fontSize: 14.5, lineHeight: 1.6, color: "rgba(247,245,255,.72)" }}>
-              We ship small and often, and we publish what changed. The roadmap
-              below is the real one.
+              We ship small and often, and we walk into clubs and leisure
+              centres to check the details ourselves.
             </p>
           </article>
           <article className="value-card" style={{ transform: "rotate(-1.1deg)", ["--accent" as string]: "#FF2FA7" }}>
@@ -127,35 +124,6 @@ export default function AboutPage() {
               properly, before anywhere else.
             </p>
           </article>
-        </div>
-      </section>
-
-      <section className="indent" id="unfinished" style={{ padding: "60px 48px 40px 198px" }}>
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "flex-end",
-            marginBottom: 22,
-            gap: 12,
-          }}
-        >
-          <h2 className="h2" style={{ fontSize: 36, margin: 0 }}>
-            The unfinished list
-          </h2>
-          <span style={{ fontSize: 13, color: "rgba(247,245,255,.5)" }}>
-            Updated {roadmapUpdated}
-          </span>
-        </div>
-        <div style={{ borderTop: "1px solid rgba(247,245,255,.14)", maxWidth: 1000 }}>
-          {roadmap.map((item) => (
-            <div className="roadmap-row" key={item.detail}>
-              <span className="roadmap-status" style={{ color: statusColor[item.status] }}>
-                {item.label}
-              </span>
-              <span style={{ flex: 1, fontSize: 15 }}>{item.detail}</span>
-            </div>
-          ))}
         </div>
       </section>
 

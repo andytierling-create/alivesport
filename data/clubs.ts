@@ -1,6 +1,21 @@
 export type AccessVerified = "in-person" | "club-reported";
 export type OfferType = "free-taster" | "payg" | "access-verified";
 export type TagTone = "pink" | "blue" | "sun" | "neutral";
+export type AgeBand = "3-10" | "10-18" | "adult" | "seniors";
+export type Gender = "men" | "women" | "mixed";
+
+export const AGE_BANDS: { id: AgeBand; label: string }[] = [
+  { id: "3-10", label: "3–10" },
+  { id: "10-18", label: "10–18" },
+  { id: "adult", label: "Adult" },
+  { id: "seniors", label: "Seniors" },
+];
+
+export const GENDERS: { id: Gender; label: string }[] = [
+  { id: "men", label: "Men" },
+  { id: "women", label: "Women" },
+  { id: "mixed", label: "Mixed" },
+];
 
 export type ClubTag = {
   label: string;
@@ -22,20 +37,48 @@ export type Club = {
   tags: ClubTag[];
   accessVerified: AccessVerified;
   accessFlags: string[];
-  womenOnly: boolean;
-  over50: boolean;
+  ageBands: AgeBand[];
+  gender: Gender;
+  accessible: boolean;
   freeTaster: boolean;
   evenings: boolean;
-  ages812: boolean;
-  allAbilities: boolean;
-  wheelchairAccessible: boolean;
   tilt: number;
-  pin: { left: string; top: string };
+  lat: number;
+  lng: number;
   phone: string;
   email: string;
   website: string;
   sessions: { day: string; time: string; price: string }[];
 };
+
+const ACCESS_FLAG_LABELS: Record<string, string> = {
+  "step-free": "Step-free",
+  "chairs-provided": "Chairs provided",
+  "changing-places": "Changing Places toilet",
+  hoist: "Hoist available",
+  "pool-hoist": "Pool hoist",
+};
+
+export function ageBandLabel(id: AgeBand) {
+  return AGE_BANDS.find((band) => band.id === id)?.label ?? id;
+}
+
+export function genderLabel(id: Gender) {
+  return GENDERS.find((item) => item.id === id)?.label ?? id;
+}
+
+export function accessFlagLabel(flag: string) {
+  return ACCESS_FLAG_LABELS[flag] ?? flag;
+}
+
+export function listingTags(club: Club): ClubTag[] {
+  return [
+    ...club.ageBands.map((id) => ({ label: ageBandLabel(id), tone: "pink" as const })),
+    { label: genderLabel(club.gender), tone: "blue" as const },
+    ...(club.accessible ? [{ label: "Accessible", tone: "sun" as const }] : []),
+    ...club.tags,
+  ];
+}
 
 export const clubs: Club[] = [
   {
@@ -51,21 +94,19 @@ export const clubs: Club[] = [
     priceNote: "then £4 / session",
     offer: "free-taster",
     tags: [
-      { label: "Ages 8–12", tone: "pink" },
       { label: "All abilities", tone: "blue" },
       { label: "Step-free", tone: "sun" },
     ],
     accessVerified: "in-person",
     accessFlags: ["step-free"],
-    womenOnly: false,
-    over50: false,
+    ageBands: ["3-10", "10-18"],
+    gender: "women",
+    accessible: true,
     freeTaster: true,
     evenings: true,
-    ages812: true,
-    allAbilities: true,
-    wheelchairAccessible: true,
     tilt: -0.5,
-    pin: { left: "34%", top: "38%" },
+    lat: 50.9178,
+    lng: -1.3515,
     phone: "023 8044 2100",
     email: "hello@bitternenetball.example",
     website: "https://example.com/bitterne-netball",
@@ -88,20 +129,18 @@ export const clubs: Club[] = [
     offer: "payg",
     tags: [
       { label: "Chairs provided", tone: "blue" },
-      { label: "Ages 14+", tone: "blue" },
       { label: "Changing Places toilet", tone: "sun" },
     ],
     accessVerified: "in-person",
     accessFlags: ["chairs-provided", "changing-places", "step-free"],
-    womenOnly: false,
-    over50: false,
+    ageBands: ["10-18", "adult"],
+    gender: "mixed",
+    accessible: true,
     freeTaster: false,
     evenings: true,
-    ages812: false,
-    allAbilities: true,
-    wheelchairAccessible: true,
     tilt: 0.4,
-    pin: { left: "58%", top: "52%" },
+    lat: 50.9165,
+    lng: -1.453,
     phone: "023 8083 3000",
     email: "play@solentwb.example",
     website: "https://example.com/solent-wb",
@@ -119,21 +158,17 @@ export const clubs: Club[] = [
     priceLabel: "£3",
     priceNote: "tea included",
     offer: "access-verified",
-    tags: [
-      { label: "Over 60s", tone: "pink" },
-      { label: "Beginners welcome", tone: "blue" },
-    ],
+    tags: [{ label: "Beginners welcome", tone: "blue" }],
     accessVerified: "club-reported",
     accessFlags: ["step-free"],
-    womenOnly: false,
-    over50: true,
+    ageBands: ["seniors"],
+    gender: "mixed",
+    accessible: false,
     freeTaster: false,
     evenings: false,
-    ages812: false,
-    allAbilities: true,
-    wheelchairAccessible: false,
     tilt: -0.3,
-    pin: { left: "22%", top: "64%" },
+    lat: 50.8967,
+    lng: -1.3765,
     phone: "023 8044 8811",
     email: "walk@woolstonfootball.example",
     website: "https://example.com/woolston-wf",
@@ -152,21 +187,19 @@ export const clubs: Club[] = [
     priceNote: "always",
     offer: "free-taster",
     tags: [
-      { label: "Women-only", tone: "pink" },
       { label: "Couch-to-5k group", tone: "blue" },
       { label: "Lit route", tone: "blue" },
     ],
     accessVerified: "club-reported",
     accessFlags: [],
-    womenOnly: true,
-    over50: false,
+    ageBands: ["adult"],
+    gender: "women",
+    accessible: false,
     freeTaster: true,
     evenings: true,
-    ages812: false,
-    allAbilities: true,
-    wheelchairAccessible: false,
     tilt: 0.5,
-    pin: { left: "70%", top: "28%" },
+    lat: 50.9338,
+    lng: -1.377,
     phone: "07700 900123",
     email: "hello@sherunssoton.example",
     website: "https://example.com/she-runs",
@@ -188,21 +221,19 @@ export const clubs: Club[] = [
     priceNote: "carers free",
     offer: "payg",
     tags: [
-      { label: "All ages", tone: "blue" },
       { label: "Hoist available", tone: "sun" },
       { label: "Step-free", tone: "sun" },
     ],
     accessVerified: "in-person",
     accessFlags: ["hoist", "step-free"],
-    womenOnly: false,
-    over50: true,
+    ageBands: ["3-10", "10-18", "adult", "seniors"],
+    gender: "mixed",
+    accessible: true,
     freeTaster: false,
     evenings: false,
-    ages812: true,
-    allAbilities: true,
-    wheelchairAccessible: true,
     tilt: -0.4,
-    pin: { left: "46%", top: "72%" },
+    lat: 50.912,
+    lng: -1.337,
     phone: "023 8043 2104",
     email: "sport@eastpoint.example",
     website: "https://example.com/eastpoint",
@@ -210,7 +241,7 @@ export const clubs: Club[] = [
   },
   {
     slug: "shirley-swim",
-    name: "Shirley Swim — Over 60s Lane Hour",
+    name: "Shirley Swim — Seniors Lane Hour",
     sport: "Swim",
     venue: "The Quays",
     distanceMiles: 2.1,
@@ -220,21 +251,17 @@ export const clubs: Club[] = [
     priceLabel: "£4.20",
     priceNote: "concession",
     offer: "payg",
-    tags: [
-      { label: "Over 60s", tone: "pink" },
-      { label: "Pool hoist", tone: "sun" },
-    ],
+    tags: [{ label: "Pool hoist", tone: "sun" }],
     accessVerified: "club-reported",
     accessFlags: ["pool-hoist"],
-    womenOnly: false,
-    over50: true,
+    ageBands: ["seniors"],
+    gender: "mixed",
+    accessible: true,
     freeTaster: false,
     evenings: false,
-    ages812: false,
-    allAbilities: false,
-    wheelchairAccessible: true,
     tilt: 0.3,
-    pin: { left: "62%", top: "44%" },
+    lat: 50.8962,
+    lng: -1.4065,
     phone: "023 8063 5000",
     email: "swim@thequays.example",
     website: "https://example.com/the-quays",
@@ -244,6 +271,34 @@ export const clubs: Club[] = [
       { day: "Friday", time: "9:00am", price: "£4.20 concession" },
     ],
   },
+  {
+    slug: "portswood-mens-five-a-side",
+    name: "Portswood Men's 5-a-side",
+    sport: "Football",
+    venue: "Portswood Recreation Ground",
+    distanceMiles: 1.5,
+    days: "Wed 7:30pm",
+    soonestMinutes: 19 * 60 + 30,
+    pricePence: 500,
+    priceLabel: "£5",
+    priceNote: "pay as you go",
+    offer: "payg",
+    tags: [{ label: "Beginners welcome", tone: "blue" }],
+    accessVerified: "club-reported",
+    accessFlags: [],
+    ageBands: ["adult"],
+    gender: "men",
+    accessible: false,
+    freeTaster: false,
+    evenings: true,
+    tilt: 0.2,
+    lat: 50.9275,
+    lng: -1.396,
+    phone: "023 8055 4411",
+    email: "play@portswoodfive.example",
+    website: "https://example.com/portswood-5",
+    sessions: [{ day: "Wednesday", time: "7:30pm", price: "£5 pay as you go" }],
+  },
 ];
 
 export const featuredSessions = [
@@ -251,7 +306,7 @@ export const featuredSessions = [
     slug: "bitterne-netball",
     title: "Saturday Junior Netball",
     when: "Sat 9:30am · free taster",
-    meta: "Bitterne · ages 8–12 · 1.2 miles",
+    meta: "Bitterne · 3–10 · 1.2 miles",
     tags: [
       { label: "All abilities", tone: "pink" as TagTone },
       { label: "Beginners", tone: "blue" as TagTone },
@@ -261,7 +316,7 @@ export const featuredSessions = [
     slug: "solent-wheelchair-basketball",
     title: "Solent Wheelchair Basketball",
     when: "Tue 6:00pm · £4 pay as you go",
-    meta: "Millbrook · ages 14+ · 2.8 miles",
+    meta: "Millbrook · 10–18 · 2.8 miles",
     tags: [
       { label: "Chairs provided", tone: "blue" as TagTone },
       { label: "Step-free", tone: "sun" as TagTone },
@@ -269,9 +324,9 @@ export const featuredSessions = [
   },
   {
     slug: "woolston-walking-football",
-    title: "Walking Football, Over 60s",
+    title: "Walking Football, Seniors",
     when: "Thu 10:10am · £3",
-    meta: "Woolston · all welcome · 0.6 miles",
+    meta: "Woolston · mixed · 0.6 miles",
     tags: [
       { label: "Tea after", tone: "pink" as TagTone },
       { label: "No kit needed", tone: "blue" as TagTone },

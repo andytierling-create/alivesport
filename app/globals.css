@@ -313,6 +313,84 @@ select:focus-visible {
   margin: 0;
 }
 
+.hero-tagline {
+  font-family: var(--font-bricolage), sans-serif;
+  font-weight: 800;
+  font-size: 22px;
+  letter-spacing: -0.03em;
+  color: #ff2fa7;
+  margin: 0 0 16px;
+}
+
+.hero-headers {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0;
+  margin: 0 0 18px;
+}
+
+.hero-headers p {
+  margin: 0;
+  font-family: var(--font-bricolage), sans-serif;
+  font-weight: 800;
+  font-size: 20px;
+  letter-spacing: -0.03em;
+  line-height: 1.15;
+}
+
+.hero-headers p:nth-child(1) {
+  color: #3b96dc;
+  transform: rotate(-1.4deg);
+}
+
+.hero-headers p:nth-child(2) {
+  color: #ffc94d;
+  transform: rotate(1.1deg);
+  margin-left: 14px;
+}
+
+.hero-headers p:nth-child(3) {
+  color: #ff2fa7;
+  font-size: 26px;
+  transform: rotate(-0.7deg);
+  margin-left: 4px;
+}
+
+.two-sided-purpose {
+  margin: 12px 0 0;
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.45;
+  color: rgba(247, 245, 255, 0.88);
+  max-width: 44ch;
+}
+
+.notify-note {
+  margin: 14px 0 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: rgba(247, 245, 255, 0.58);
+  max-width: 52ch;
+}
+
+.mission-statement,
+.aim-statement {
+  font-size: 17px;
+  line-height: 1.5;
+  color: rgba(247, 245, 255, 0.86);
+  max-width: 48ch;
+  margin: 18px 0 0;
+  text-wrap: pretty;
+}
+
+.aim-statement {
+  max-width: 52ch;
+  margin: 22px 0 0;
+  color: #ffc94d;
+  font-weight: 600;
+}
+
 .hero-sub {
   font-size: 19px;
   line-height: 1.5;
@@ -338,7 +416,7 @@ select:focus-visible {
   border: 1px solid rgba(247, 245, 255, 0.14);
   padding: 10px;
   border-radius: 16px;
-  max-width: 760px;
+  max-width: 920px;
   transform: rotate(-1.2deg);
 }
 
@@ -401,6 +479,18 @@ select:focus-visible {
   margin-top: 16px;
   flex-wrap: wrap;
   align-items: center;
+}
+
+.chip-legend {
+  font-size: 12px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(247, 245, 255, 0.45);
+  margin: 0 2px 0 8px;
+}
+
+.chip-legend:first-child {
+  margin-left: 0;
 }
 
 .chip {
@@ -513,14 +603,41 @@ select:focus-visible {
   line-height: 1;
 }
 
+.why-sport {
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(220px, 0.85fr);
+  gap: 36px;
+  align-items: center;
+}
+
+.why-sport-copy {
+  margin: 0 0 12px;
+  font-size: 16px;
+  line-height: 1.6;
+  color: rgba(247, 245, 255, 0.76);
+  max-width: 52ch;
+}
+
+.why-sport-copy:last-child {
+  margin-bottom: 0;
+}
+
+.why-sport-photo {
+  width: 100%;
+  min-height: 220px;
+  border-radius: 20px;
+}
+
 .group-grid {
   display: flex;
   gap: 18px;
-  align-items: flex-start;
+  align-items: stretch;
 }
 
 .group-card {
   flex: 1;
+  display: flex;
+  flex-direction: column;
   background: linear-gradient(
     160deg,
     rgba(255, 47, 167, 0.16),
@@ -549,6 +666,87 @@ select:focus-visible {
   font-size: 14px;
   line-height: 1.55;
   color: rgba(247, 245, 255, 0.7);
+}
+
+.group-benefit {
+  margin-top: auto;
+  padding-top: 14px;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.45;
+  color: #ffc94d;
+}
+
+.club-benefits {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 0 0 18px;
+  max-width: 46ch;
+}
+
+.club-benefits p {
+  margin: 0;
+  font-size: 16px;
+  line-height: 1.55;
+  color: rgba(10, 13, 36, 0.78);
+}
+
+.club-setup {
+  margin: 0 0 22px;
+  font-size: 16px;
+  line-height: 1.55;
+  color: rgba(10, 13, 36, 0.78);
+  max-width: 46ch;
+}
+
+.for-clubs-benefits {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px;
+  max-width: 1000px;
+}
+
+.for-clubs-benefit {
+  background: #131a3c;
+  border: 1px solid rgba(247, 245, 255, 0.12);
+  border-radius: 20px;
+  padding: 28px 26px;
+}
+
+.for-clubs-benefit p {
+  margin: 0;
+  font-size: 16px;
+  line-height: 1.6;
+  color: rgba(247, 245, 255, 0.74);
+}
+
+.listing-facts {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin: 28px 0 0;
+}
+
+.listing-facts div {
+  background: #131a3c;
+  border: 1px solid rgba(247, 245, 255, 0.12);
+  border-radius: 14px;
+  padding: 14px 16px;
+}
+
+.listing-facts dt {
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(247, 245, 255, 0.5);
+  margin: 0 0 6px;
+}
+
+.listing-facts dd {
+  margin: 0;
+  font-weight: 700;
+  font-size: 16px;
 }
 
 .session-grid {
@@ -825,6 +1023,7 @@ select:focus-visible {
   position: absolute;
   inset: 0;
   background: linear-gradient(104deg, rgba(255, 47, 167, 0.12), transparent 55%);
+  pointer-events: none;
 }
 
 .clubs-layout {
@@ -854,7 +1053,8 @@ select:focus-visible {
 }
 
 .result-card:hover,
-.result-card:focus-visible {
+.result-card:focus-visible,
+.result-card.selected {
   transform: rotate(var(--tilt)) translateX(6px);
   border-color: #ff2fa7;
 }
@@ -882,14 +1082,27 @@ select:focus-visible {
 .map-panel {
   height: 600px;
   border-radius: 18px;
-  background: repeating-linear-gradient(
-    115deg,
-    #141a3e 0 16px,
-    #101637 16px 32px
-  );
+  background: #101637;
   border: 1px solid rgba(247, 245, 255, 0.12);
   position: relative;
   overflow: hidden;
+}
+
+.leaflet-host,
+.leaflet-container {
+  height: 100%;
+  width: 100%;
+  border-radius: 18px;
+  background: #101637;
+}
+
+.leaflet-popup-content {
+  color: #0a0d24;
+}
+
+.leaflet-popup-content a {
+  color: #3b96dc;
+  font-weight: 600;
 }
 
 .pin {
@@ -909,6 +1122,11 @@ select:focus-visible {
   justify-content: space-between;
   align-items: center;
   gap: 20px;
+}
+
+.honesty-card-empty {
+  border-style: solid;
+  background: rgba(255, 201, 77, 0.12);
 }
 
 .save-card {
@@ -993,7 +1211,10 @@ select:focus-visible {
   .group-grid,
   .session-grid,
   .people-grid,
-  .clubs-layout {
+  .clubs-layout,
+  .why-sport,
+  .for-clubs-benefits,
+  .listing-facts {
     display: grid;
     grid-template-columns: 1fr;
   }
@@ -1060,6 +1281,18 @@ select:focus-visible {
   .h1-home {
     font-size: 48px;
     letter-spacing: -0.045em;
+  }
+
+  .hero-headers p {
+    font-size: 18px;
+  }
+
+  .hero-headers p:nth-child(2) {
+    margin-left: 8px;
+  }
+
+  .hero-headers p:nth-child(3) {
+    font-size: 22px;
   }
 
   .h2,

@@ -1,17 +1,13 @@
-import { clubs, type Club } from "@/data/clubs";
+import { AGE_BANDS, GENDERS, clubs, type AgeBand, type Club, type Gender } from "@/data/clubs";
 
 export const FILTERS = [
-  { id: "all-abilities", label: "All abilities" },
-  { id: "wheelchair", label: "Wheelchair accessible" },
-  { id: "ages-8-12", label: "Ages 8–12" },
-  { id: "women-only", label: "Women-only" },
-  { id: "over-50s", label: "Over 50s" },
   { id: "free-taster", label: "Free taster" },
   { id: "evenings", label: "Evenings" },
 ] as const;
 
 export type FilterId = (typeof FILTERS)[number]["id"];
 export type SortId = "nearest" | "soonest" | "price";
+export type AccessibleFilter = "yes" | "no" | "";
 
 export type SearchState = {
   q: string;
@@ -19,9 +15,13 @@ export type SearchState = {
   radius: string;
   day: string;
   age: string;
+  gender: string;
+  accessible: AccessibleFilter;
   filters: FilterId[];
   sort: SortId;
 };
+
+export { AGE_BANDS, GENDERS };
 
 export function parseFilters(raw: string | string[] | undefined): FilterId[] {
   const value = Array.isArray(raw) ? raw.join(",") : (raw ?? "");
@@ -44,12 +44,18 @@ export function parseSearch(
   const sort: SortId =
     sortRaw === "soonest" || sortRaw === "price" ? sortRaw : "nearest";
 
+  const accessibleRaw = first("accessible");
+  const accessible: AccessibleFilter =
+    accessibleRaw === "yes" || accessibleRaw === "no" ? accessibleRaw : "";
+
   return {
     q: first("q"),
     postcode: first("postcode", "SO14 3ZE"),
     radius: first("radius", "5"),
     day: first("day", "any"),
     age: first("age"),
+    gender: first("gender"),
+    accessible,
     filters: parseFilters(params.filters),
     sort,
   };
@@ -71,16 +77,6 @@ function matchesQuery(club: Club, q: string) {
 
 function matchesFilter(club: Club, filter: FilterId) {
   switch (filter) {
-    case "all-abilities":
-      return club.allAbilities;
-    case "wheelchair":
-      return club.wheelchairAccessible;
-    case "ages-8-12":
-      return club.ages812;
-    case "women-only":
-      return club.womenOnly;
-    case "over-50s":
-      return club.over50;
     case "free-taster":
       return club.freeTaster;
     case "evenings":
@@ -88,12 +84,29 @@ function matchesFilter(club: Club, filter: FilterId) {
   }
 }
 
+function isAgeBand(value: string): value is AgeBand {
+  return AGE_BANDS.some((band) => band.id === value);
+}
+
+function isGender(value: string): value is Gender {
+  return GENDERS.some((item) => item.id === value);
+}
+
 function matchesAge(club: Club, age: string) {
   if (!age || age === "any") return true;
-  if (age === "8-12") return club.ages812;
-  if (age === "14+") return !club.ages812 || club.allAbilities;
-  if (age === "over-60") return club.over50;
-  return true;
+  if (!isAgeBand(age)) return true;
+  return club.ageBands.includes(age);
+}
+
+function matchesGender(club: Club, gender: string) {
+  if (!gender || gender === "any") return true;
+  if (!isGender(gender)) return true;
+  return club.gender === gender;
+}
+
+function matchesAccessible(club: Club, accessible: AccessibleFilter) {
+  if (!accessible) return true;
+  return accessible === "yes" ? club.accessible : !club.accessible;
 }
 
 function matchesDay(club: Club, day: string) {
@@ -101,13 +114,15 @@ function matchesDay(club: Club, day: string) {
   return club.days.toLowerCase().includes(day.slice(0, 3).toLowerCase());
 }
 
-export function searchClubs(state: SearchState): Club[] {
+export function searchListings(state: SearchState, listings: Club[]): Club[] {
   const radius = Number(state.radius) || 5;
 
-  const results = clubs.filter((club) => {
+  const results = listings.filter((club) => {
     if (club.distanceMiles > radius) return false;
     if (!matchesQuery(club, state.q)) return false;
     if (!matchesAge(club, state.age)) return false;
+    if (!matchesGender(club, state.gender)) return false;
+    if (!matchesAccessible(club, state.accessible)) return false;
     if (!matchesDay(club, state.day)) return false;
     return state.filters.every((filter) => matchesFilter(club, filter));
   });
@@ -121,6 +136,10 @@ export function searchClubs(state: SearchState): Club[] {
     }
     return a.distanceMiles - b.distanceMiles;
   });
+}
+
+export function searchClubs(state: SearchState): Club[] {
+  return searchListings(state, clubs);
 }
 
 export function sessionCount(results: Club[]) {
