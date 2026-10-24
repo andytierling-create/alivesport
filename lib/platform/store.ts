@@ -13,7 +13,7 @@ import {
 } from "@/lib/platform/persist";
 import { thisWeekStartsAt } from "@/lib/platform/dates";
 import { nextStartsAt } from "@/lib/schedule";
-import { seedCategories } from "@/lib/platform/family";
+import { familyForAdult, seedCategories } from "@/lib/platform/family";
 import {
   CHILD_SHAPED_KEYS,
   DEMO_ADULT,
@@ -616,8 +616,15 @@ export function lastNoticeFor(adult: Adult, state: PlatformState) {
 }
 
 export function searchesFor(adult: Adult, state: PlatformState) {
-  return (state.savedSearches ?? []).filter(
-    (search) => search.adultId === adult.id || search.email === adult.email,
+  const searches = state.savedSearches ?? [];
+  const family = familyForAdult(adult, state);
+  if (family) {
+    return searches.filter((search) => search.familyId === family.id);
+  }
+  return searches.filter(
+    (search) =>
+      !search.familyId &&
+      (search.adultId === adult.id || search.email === adult.email),
   );
 }
 
@@ -643,10 +650,12 @@ export function saveSearchOn(
     state.adults.find((item) => item.id === input.adultId) ??
     state.adults.find((item) => item.email === email) ??
     null;
+  const family = adult ? familyForAdult(adult, state) : null;
   const search: SavedSearch = {
     id: newId("search"),
     email,
     adultId: adult?.id,
+    familyId: family?.id,
     q: String(input.q ?? "").trim(),
     postcode: String(input.postcode ?? adult?.postcode ?? "SO14 3ZE").trim(),
     radius: parseRadius(input.radius),

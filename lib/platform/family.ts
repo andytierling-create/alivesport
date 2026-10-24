@@ -57,18 +57,34 @@ export function incomingInviteForEmail(email: string, state: PlatformState) {
 
 export function attachSearchesToFamily(
   state: PlatformState,
-  _familyId: string,
-  _adultId: string,
+  familyId: string,
+  adultId: string,
 ): PlatformState {
-  return state;
+  const adult = state.adults.find((item) => item.id === adultId);
+  return {
+    ...state,
+    savedSearches: (state.savedSearches ?? []).map((search) => {
+      const owned =
+        search.adultId === adultId || Boolean(adult && search.email === adult.email);
+      if (!owned || search.familyId) return search;
+      return { ...search, familyId };
+    }),
+  };
 }
 
 export function detachFamilySearchesToAdult(
   state: PlatformState,
-  _familyId: string,
-  _adultId: string,
+  familyId: string,
+  adultId: string,
 ): PlatformState {
-  return state;
+  return {
+    ...state,
+    savedSearches: (state.savedSearches ?? []).map((search) => {
+      if (search.familyId !== familyId) return search;
+      const { familyId: _drop, ...rest } = search;
+      return { ...rest, adultId: search.adultId ?? adultId };
+    }),
+  };
 }
 
 function fail(status: number, error: string): Fail {

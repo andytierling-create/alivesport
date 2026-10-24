@@ -9,7 +9,7 @@ import {
   patchFamilyOn,
   seedCategories,
 } from "./family";
-import { registerAdultOn, seedPlatform } from "./store";
+import { registerAdultOn, saveSearchOn, searchesFor, seedPlatform } from "./store";
 
 test("normaliseState fills empty family collections and seed categories match the spec labels", () => {
   const state = normaliseState({});
@@ -200,4 +200,113 @@ test("last adult leave deletes family and voids invite", () => {
   assert.equal(left.state.families.length, 0);
   assert.equal(left.state.familyInvites.length, 0);
 });
+
+test("creating a family carries that adult's existing searches", () => {
+  const seeded = seedPlatform();
+  const first = seeded.adults[0];
+  const saved = saveSearchOn(seeded, {
+    email: first.email,
+    adultId: first.id,
+    q: "walking",
+    postcode: "SO14 3ZE",
+    radius: "5",
+  });
+  assert.equal(saved.ok, true);
+  if (!saved.ok) return;
+  const invited = inviteAdultOn(saved.state, first, "x@demo.alivesport");
+  assert.equal(invited.ok, true);
+  if (!invited.ok) return;
+  const listed = searchesFor(first, invited.state);
+  assert.equal(listed.length, 1);
+  assert.equal(listed[0].familyId, invited.family.id);
+});
+
+test("accepting carries the second adult's existing searches onto the family", () => {
+  const { state, first, second } = twoAdults();
+  const saved = saveSearchOn(state, {
+    email: second.email,
+    adultId: second.id,
+    q: "swim",
+    postcode: "SO15 1AA",
+    radius: "5",
+  });
+  assert.equal(saved.ok, true);
+  if (!saved.ok) return;
+  const invited = inviteAdultOn(saved.state, first, second.email);
+  assert.equal(invited.ok, true);
+  if (!invited.ok) return;
+  const accepted = acceptInviteOn(invited.state, invited.invite.token, {});
+  assert.equal(accepted.ok, true);
+  if (!accepted.ok) return;
+  const listed = searchesFor(first, accepted.state);
+  assert.ok(listed.some((item) => item.q === "swim" && item.familyId === accepted.family.id));
+});
+
+test("after link, a new save from either adult is a family search", () => {
+  const { state, first, second } = twoAdults();
+  const invited = inviteAdultOn(state, first, second.email);
+  assert.equal(invited.ok, true);
+  if (!invited.ok) return;
+  const accepted = acceptInviteOn(invited.state, invited.invite.token, {});
+  assert.equal(accepted.ok, true);
+  if (!accepted.ok) return;
+  const saved = saveSearchOn(accepted.state, {
+    email: second.email,
+    adultId: second.id,
+    q: "netball",
+    postcode: "SO14 3ZE",
+    radius: "5",
+  });
+  assert.equal(saved.ok, true);
+  if (!saved.ok) return;
+  assert.equal(saved.search.familyId, accepted.family.id);
+  assert.ok(searchesFor(first, saved.state).some((item) => item.q === "netball"));
+});
+
+test("leaver does not keep the family search list", () => {
+  const { state, first, second } = twoAdults();
+  const invited = inviteAdultOn(state, first, second.email);
+  assert.equal(invited.ok, true);
+  if (!invited.ok) return;
+  const accepted = acceptInviteOn(invited.state, invited.invite.token, {});
+  assert.equal(accepted.ok, true);
+  if (!accepted.ok) return;
+  const saved = saveSearchOn(accepted.state, {
+    email: first.email,
+    adultId: first.id,
+    q: "shared",
+    postcode: "SO14 3ZE",
+    radius: "5",
+  });
+  assert.equal(saved.ok, true);
+  if (!saved.ok) return;
+  const left = leaveFamilyOn(saved.state, second);
+  assert.equal(left.ok, true);
+  if (!left.ok) return;
+  assert.equal(searchesFor(second, left.state).some((item) => item.q === "shared"), false);
+  assert.ok(searchesFor(first, left.state).some((item) => item.q === "shared"));
+});
+
+test("last adult leave returns family searches to that adult as personal", () => {
+  const seeded = seedPlatform();
+  const first = seeded.adults[0];
+  const saved = saveSearchOn(seeded, {
+    email: first.email,
+    adultId: first.id,
+    q: "kept",
+    postcode: "SO14 3ZE",
+    radius: "5",
+  });
+  assert.equal(saved.ok, true);
+  if (!saved.ok) return;
+  const invited = inviteAdultOn(saved.state, first, "gone@demo.alivesport");
+  assert.equal(invited.ok, true);
+  if (!invited.ok) return;
+  const left = leaveFamilyOn(invited.state, first);
+  assert.equal(left.ok, true);
+  if (!left.ok) return;
+  const listed = searchesFor(first, left.state);
+  assert.ok(listed.some((item) => item.q === "kept" && !item.familyId));
+});
+
 

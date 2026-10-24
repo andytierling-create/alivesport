@@ -13,6 +13,7 @@ import {
   registerAdultOn,
   revokeTokenOn,
   saveSearchOn,
+  searchesFor,
   seedPlatform,
 } from "./store";
 import { isHashedPassword } from "./password";
@@ -123,6 +124,22 @@ test("saving a search stores it against the adult email", () => {
   assert.equal(saved.state.savedSearches.length, 1);
   const adult = saved.state.adults.find((item) => item.id === "adult-alex");
   assert.equal(adult?.notifyOptIn, true);
+});
+
+test("searchesFor returns family searches once the adult is linked", () => {
+  const seeded = seedPlatform();
+  const adult = seeded.adults[0];
+  const saved = saveSearchOn(seeded, {
+    email: adult.email,
+    adultId: adult.id,
+    q: "personal",
+    postcode: "SO14 3ZE",
+    radius: "5",
+  });
+  assert.equal(saved.ok, true);
+  if (!saved.ok) return;
+  assert.equal(searchesFor(adult, saved.state).length, 1);
+  assert.equal(searchesFor(adult, saved.state)[0].familyId, undefined);
 });
 
 test("saving a search rejects child-shaped fields", () => {
