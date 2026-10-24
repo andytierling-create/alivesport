@@ -13,7 +13,15 @@ import {
 } from "@/lib/platform/persist";
 import { thisWeekStartsAt } from "@/lib/platform/dates";
 import { nextStartsAt } from "@/lib/schedule";
-import { familyForAdult, seedCategories } from "@/lib/platform/family";
+import {
+  acceptInviteOn,
+  addCategoryOn,
+  familyForAdult,
+  inviteAdultOn,
+  leaveFamilyOn,
+  patchFamilyOn,
+  seedCategories,
+} from "@/lib/platform/family";
 import {
   CHILD_SHAPED_KEYS,
   DEMO_ADULT,
@@ -493,6 +501,17 @@ export function patchAdultOn(
   if (!adult) return { ok: false, status: 404, error: "Adult not found." };
 
   const patch = body as AdultPatch;
+  let categoryIds = adult.categoryIds;
+  if (Object.hasOwn(body, "categoryIds")) {
+    if (!Array.isArray(patch.categoryIds)) {
+      return { ok: false, status: 400, error: "categoryIds must be a list." };
+    }
+    const known = new Set(state.activityCategories.map((item) => item.id));
+    categoryIds = patch.categoryIds.map((item) => String(item));
+    if (categoryIds.some((id) => !known.has(id))) {
+      return { ok: false, status: 400, error: "Unknown category." };
+    }
+  }
   const next: Adult = {
     ...adult,
     displayName: patch.displayName?.trim() || adult.displayName,
@@ -505,6 +524,7 @@ export function patchAdultOn(
       typeof patch.accessible === "boolean" ? patch.accessible : adult.accessible,
     notifyOptIn:
       typeof patch.notifyOptIn === "boolean" ? patch.notifyOptIn : adult.notifyOptIn,
+    categoryIds,
   };
 
   return {
@@ -846,6 +866,58 @@ export async function registerOrg(
     lat: located.lat,
     lng: located.lng,
   });
+  if (!result.ok) return result;
+  await commit(result.state);
+  return result;
+}
+
+export async function inviteAdult(
+  inviter: Adult,
+  email: string,
+  state?: PlatformState,
+) {
+  const current = state ?? (await readPlatform());
+  const result = inviteAdultOn(current, inviter, email);
+  if (!result.ok) return result;
+  await commit(result.state);
+  return result;
+}
+
+export async function acceptInvite(
+  token: string,
+  input: { displayName?: string; password?: string },
+  state?: PlatformState,
+) {
+  const current = state ?? (await readPlatform());
+  const result = acceptInviteOn(current, token, input);
+  if (!result.ok) return result;
+  await commit(result.state);
+  return result;
+}
+
+export async function leaveFamily(adult: Adult, state?: PlatformState) {
+  const current = state ?? (await readPlatform());
+  const result = leaveFamilyOn(current, adult);
+  if (!result.ok) return result;
+  await commit(result.state);
+  return result;
+}
+
+export async function patchFamily(
+  adult: Adult,
+  body: Record<string, unknown>,
+  state?: PlatformState,
+) {
+  const current = state ?? (await readPlatform());
+  const result = patchFamilyOn(current, adult, body);
+  if (!result.ok) return result;
+  await commit(result.state);
+  return result;
+}
+
+export async function addCategory(label: string, state?: PlatformState) {
+  const current = state ?? (await readPlatform());
+  const result = addCategoryOn(current, label);
   if (!result.ok) return result;
   await commit(result.state);
   return result;

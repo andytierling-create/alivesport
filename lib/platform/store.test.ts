@@ -69,6 +69,27 @@ test("unpublished events are omitted from the public list", () => {
   );
 });
 
+test("patchAdultOn rejects children still", () => {
+  const seeded = seedPlatform();
+  const adult = seeded.adults[0];
+  const rejected = patchAdultOn(seeded, adult.id, { children: [] });
+  assert.equal(rejected.ok, false);
+  if (rejected.ok) return;
+  assert.equal(rejected.status, 400);
+  assert.match(rejected.error, /do not store/i);
+});
+
+test("patchAdultOn stores categoryIds", () => {
+  const seeded = seedPlatform();
+  const adult = seeded.adults[0];
+  const category = seeded.activityCategories[0];
+  assert.ok(category);
+  const patched = patchAdultOn(seeded, adult.id, { categoryIds: [category.id] });
+  assert.equal(patched.ok, true);
+  if (!patched.ok) return;
+  assert.deepEqual(patched.adult.categoryIds, [category.id]);
+});
+
 test("adult patch rejects child-shaped fields", () => {
   const seeded = seedPlatform();
   const adult = seeded.adults[0];

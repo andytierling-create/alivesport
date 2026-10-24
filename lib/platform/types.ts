@@ -194,6 +194,7 @@ export type AdultPatch = {
   gender?: Gender | "any";
   accessible?: boolean;
   notifyOptIn?: boolean;
+  categoryIds?: string[];
 };
 
 export type OrgPatch = {

@@ -1,3 +1,8 @@
+import {
+  familyForAdult,
+  incomingInviteForEmail,
+  pendingInviteForFamily,
+} from "@/lib/platform/family";
 import { eventsForOrg, lastNoticeFor, patchAdult, readPlatform, searchesFor } from "@/lib/platform/store";
 import { demoApiGuard } from "@/lib/platform/demo-api";
 import { corsPreflight, jsonError, jsonOk } from "@/lib/platform/http";
@@ -10,11 +15,16 @@ export async function GET(request: Request) {
   if (!actor) return jsonError("Sign in required.", 401);
   const state = await readPlatform();
   if (actor.role === "adult") {
+    const family = familyForAdult(actor.adult, state);
     return jsonOk({
       role: "adult" as const,
       adult: actor.adult,
       lastNotice: lastNoticeFor(actor.adult, state),
       savedSearches: searchesFor(actor.adult, state),
+      family,
+      invite: family ? pendingInviteForFamily(family.id, state) : null,
+      incomingInvite: incomingInviteForEmail(actor.adult.email, state),
+      categories: state.activityCategories,
     });
   }
   return jsonOk({

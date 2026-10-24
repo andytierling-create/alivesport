@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "tsx --tsconfig tsconfig.json --test lib/platform/store.test.ts lib/platform/geo.test.ts lib/platform/public-search.test.ts lib/platform/persist.test.ts lib/platform/password.test.ts lib/demo-search.test.ts lib/schedule.test.ts"
+    "test": "tsx --tsconfig tsconfig.json --test lib/platform/store.test.ts lib/platform/geo.test.ts lib/platform/public-search.test.ts lib/platform/persist.test.ts lib/platform/password.test.ts lib/platform/family.test.ts lib/platform/mail.test.ts lib/demo-search.test.ts lib/schedule.test.ts"
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.2.0",
