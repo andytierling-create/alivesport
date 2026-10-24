@@ -1,7 +1,15 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { normaliseState } from "./persist";
-import { SEED_CATEGORY_LABELS, seedCategories } from "./family";
+import {
+  SEED_CATEGORY_LABELS,
+  acceptInviteOn,
+  inviteAdultOn,
+  leaveFamilyOn,
+  patchFamilyOn,
+  seedCategories,
+} from "./family";
+import { registerAdultOn, seedPlatform } from "./store";
 
 test("normaliseState fills empty family collections and seed categories match the spec labels", () => {
   const state = normaliseState({});
@@ -13,3 +21,183 @@ test("normaliseState fills empty family collections and seed categories match th
     SEED_CATEGORY_LABELS,
   );
 });
+
+function twoAdults() {
+  const seeded = seedPlatform();
+  const first = seeded.adults[0];
+  const registered = registerAdultOn(seeded, {
+    email: "jordan@demo.alivesport",
+    password: "secret12",
+    displayName: "Jordan Lee",
+    postcode: "SO15 1AA",
+  });
+  assert.equal(registered.ok, true);
+  if (!registered.ok) throw new Error("register");
+  const second = registered.adult;
+  return { state: registered.state, first, second };
+}
+
+test("invite then accept links two adults", () => {
+  const { state, first, second } = twoAdults();
+  const invited = inviteAdultOn(state, first, second.email);
+  assert.equal(invited.ok, true);
+  if (!invited.ok) return;
+  const accepted = acceptInviteOn(invited.state, invited.invite.token, {});
+  assert.equal(accepted.ok, true);
+  if (!accepted.ok) return;
+  assert.equal(accepted.family.adultIds.length, 2);
+  assert.ok(accepted.family.adultIds.includes(first.id));
+  assert.ok(accepted.family.adultIds.includes(second.id));
+  assert.equal(accepted.state.familyInvites.length, 0);
+});
+
+test("invite to an adult already in a family is rejected", () => {
+  const { state, first, second } = twoAdults();
+  const invited = inviteAdultOn(state, first, second.email);
+  assert.equal(invited.ok, true);
+  if (!invited.ok) return;
+  const accepted = acceptInviteOn(invited.state, invited.invite.token, {});
+  assert.equal(accepted.ok, true);
+  if (!accepted.ok) return;
+  const third = registerAdultOn(accepted.state, {
+    email: "sam@demo.alivesport",
+    password: "secret12",
+    displayName: "Sam",
+  });
+  assert.equal(third.ok, true);
+  if (!third.ok) return;
+  const again = inviteAdultOn(third.state, third.adult, second.email);
+  assert.equal(again.ok, false);
+  if (again.ok) return;
+  assert.equal(again.status, 409);
+});
+
+test("accept expired token fails and leaves one adult", () => {
+  const { state, first, second } = twoAdults();
+  const now = new Date("2026-01-01T00:00:00.000Z");
+  const invited = inviteAdultOn(state, first, second.email, now);
+  assert.equal(invited.ok, true);
+  if (!invited.ok) return;
+  const later = new Date(now.getTime() + 8 * 24 * 60 * 60 * 1000);
+  const accepted = acceptInviteOn(invited.state, invited.invite.token, {}, later);
+  assert.equal(accepted.ok, false);
+  if (accepted.ok) return;
+  assert.equal(accepted.status, 400);
+  assert.equal(invited.state.families[0].adultIds.length, 1);
+});
+
+test("accept reused token fails", () => {
+  const { state, first, second } = twoAdults();
+  const invited = inviteAdultOn(state, first, second.email);
+  assert.equal(invited.ok, true);
+  if (!invited.ok) return;
+  const firstAccept = acceptInviteOn(invited.state, invited.invite.token, {});
+  assert.equal(firstAccept.ok, true);
+  if (!firstAccept.ok) return;
+  const secondAccept = acceptInviteOn(firstAccept.state, invited.invite.token, {});
+  assert.equal(secondAccept.ok, false);
+  if (secondAccept.ok) return;
+  assert.equal(secondAccept.status, 400);
+});
+
+test("new adult accept creates an account and joins", () => {
+  const seeded = seedPlatform();
+  const first = seeded.adults[0];
+  const invited = inviteAdultOn(seeded, first, "new@demo.alivesport");
+  assert.equal(invited.ok, true);
+  if (!invited.ok) return;
+  const accepted = acceptInviteOn(invited.state, invited.invite.token, {
+    displayName: "New Player",
+    password: "secret12",
+  });
+  assert.equal(accepted.ok, true);
+  if (!accepted.ok) return;
+  assert.ok(accepted.state.credentials.some((item) => item.email === "new@demo.alivesport"));
+  assert.equal(accepted.family.adultIds.length, 2);
+});
+
+test("patchFamilyOn rejects child-shaped keys", () => {
+  const { state, first } = twoAdults();
+  const invited = inviteAdultOn(state, first, "x@demo.alivesport");
+  assert.equal(invited.ok, true);
+  if (!invited.ok) return;
+  const patched = patchFamilyOn(invited.state, first, { children: [] });
+  assert.equal(patched.ok, false);
+  if (patched.ok) return;
+  assert.equal(patched.status, 400);
+  assert.match(patched.error, /do not store/i);
+});
+
+test("patchFamilyOn accepts childSlots age band and gender only", () => {
+  const { state, first } = twoAdults();
+  const invited = inviteAdultOn(state, first, "x@demo.alivesport");
+  assert.equal(invited.ok, true);
+  if (!invited.ok) return;
+  const patched = patchFamilyOn(invited.state, first, {
+    childSlots: [{ ageBand: "3-10", gender: "mixed" }],
+  });
+  assert.equal(patched.ok, true);
+  if (!patched.ok) return;
+  const slot = patched.family.childSlots[0];
+  assert.equal(slot.ageBand, "3-10");
+  assert.equal(slot.gender, "mixed");
+  assert.ok(slot.id);
+  assert.deepEqual(Object.keys(slot).sort(), ["ageBand", "gender", "id"]);
+});
+
+test("ninth child slot is rejected", () => {
+  const { state, first } = twoAdults();
+  const invited = inviteAdultOn(state, first, "x@demo.alivesport");
+  assert.equal(invited.ok, true);
+  if (!invited.ok) return;
+  const slots = Array.from({ length: 9 }, () => ({ ageBand: "3-10" as const, gender: "mixed" as const }));
+  const patched = patchFamilyOn(invited.state, first, { childSlots: slots });
+  assert.equal(patched.ok, false);
+  if (patched.ok) return;
+  assert.equal(patched.status, 400);
+});
+
+test("either adult can patch childSlots", () => {
+  const { state, first, second } = twoAdults();
+  const invited = inviteAdultOn(state, first, second.email);
+  assert.equal(invited.ok, true);
+  if (!invited.ok) return;
+  const accepted = acceptInviteOn(invited.state, invited.invite.token, {});
+  assert.equal(accepted.ok, true);
+  if (!accepted.ok) return;
+  const patched = patchFamilyOn(accepted.state, second, {
+    childSlots: [{ ageBand: "10-18", gender: "women" }],
+  });
+  assert.equal(patched.ok, true);
+  if (!patched.ok) return;
+  assert.equal(patched.family.childSlots[0].ageBand, "10-18");
+});
+
+test("one adult leave keeps family for the other", () => {
+  const { state, first, second } = twoAdults();
+  const invited = inviteAdultOn(state, first, second.email);
+  assert.equal(invited.ok, true);
+  if (!invited.ok) return;
+  const accepted = acceptInviteOn(invited.state, invited.invite.token, {});
+  assert.equal(accepted.ok, true);
+  if (!accepted.ok) return;
+  const left = leaveFamilyOn(accepted.state, second);
+  assert.equal(left.ok, true);
+  if (!left.ok) return;
+  assert.equal(left.state.families.length, 1);
+  assert.deepEqual(left.state.families[0].adultIds, [first.id]);
+});
+
+test("last adult leave deletes family and voids invite", () => {
+  const seeded = seedPlatform();
+  const first = seeded.adults[0];
+  const invited = inviteAdultOn(seeded, first, "pending@demo.alivesport");
+  assert.equal(invited.ok, true);
+  if (!invited.ok) return;
+  const left = leaveFamilyOn(invited.state, first);
+  assert.equal(left.ok, true);
+  if (!left.ok) return;
+  assert.equal(left.state.families.length, 0);
+  assert.equal(left.state.familyInvites.length, 0);
+});
+
