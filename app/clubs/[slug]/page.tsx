@@ -4,6 +4,7 @@ import { clubs, getClub } from "@/data/clubs";
 
 type Props = {
   params: Promise<{ slug: string }>;
+  searchParams: Promise<{ postcode?: string }>;
 };
 
 export function generateStaticParams() {
@@ -16,7 +17,14 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return { title: club?.name ?? "Club" };
 }
 
-export default async function ClubPage({ params }: Props) {
+export default async function ClubPage({ params, searchParams }: Props) {
   const { slug } = await params;
-  return <ClubDetailView slug={slug} initialClub={getClub(slug) ?? null} />;
+  const { postcode } = await searchParams;
+  return (
+    <ClubDetailView
+      slug={slug}
+      initialClub={getClub(slug) ?? null}
+      fromPostcode={postcode}
+    />
+  );
 }

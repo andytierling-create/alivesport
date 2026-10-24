@@ -3,16 +3,22 @@
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { formatMiles, withDistances, type GeoLocate } from "@/lib/platform/geo";
+import { withSchedule } from "@/lib/schedule";
 import { AGE_BANDS, GENDERS, clubs, listingTags, type Club } from "@/data/clubs";
-import { clubListings } from "@/lib/catalog";
-import { isDemoEnabled } from "@/lib/demo-flag";
+import { listingsFromPublishedEvents } from "@/lib/catalog";
+import { isPlatformClientEnabled } from "@/lib/demo-flag";
 import {
+  DEFAULT_SEARCH_RADIUS,
   FILTERS,
   offerColor,
+  parseRadius,
   parseSearch,
   postcodeDistrict,
+  SEARCH_RADII,
   searchListings,
+  searchRadiusLabel,
   sessionCount,
   type FilterId,
   type SortId,
@@ -48,9 +54,13 @@ export function ClubsExplorer({
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const [mapOpen, setMapOpen] = useState(true);
-  const [saved, setSaved] = useState(false);
+  const [saved, setSaved] = useState("");
+  const [saveError, setSaveError] = useState("");
   const [selectedSlug, setSelectedSlug] = useState<string | null>(null);
-  const { state: demoState } = useDemo();
+  const [origin, setOrigin] = useState<GeoLocate | null>(null);
+  const [geoStatus, setGeoStatus] = useState<"loading" | "ready" | "error">("loading");
+  const [geoError, setGeoError] = useState("");
+  const { publishedEvents, publicOrgs, adult } = useDemo();
 
   const state = useMemo(
     () => parseSearch(Object.fromEntries(searchParams.entries())),
@@ -59,13 +69,57 @@ export function ClubsExplorer({
 
   const source = useMemo(
     () =>
-      detailBasePath === "/clubs" && isDemoEnabled()
-        ? clubListings(demoState)
+      detailBasePath === "/clubs" && isPlatformClientEnabled()
+        ? listingsFromPublishedEvents(listings, publishedEvents, publicOrgs)
         : listings,
-    [detailBasePath, listings, demoState],
+    [detailBasePath, listings, publishedEvents, publicOrgs],
   );
 
-  const results = useMemo(() => searchListings(state, source), [state, source]);
+  useEffect(() => {
+    let cancelled = false;
+    setGeoStatus("loading");
+    setGeoError("");
+    void fetch(`/api/geo?postcode=${encodeURIComponent(state.postcode)}`)
+      .then(async (response) => {
+        const data = (await response.json()) as GeoLocate & { error?: string };
+        if (!response.ok) {
+          throw new Error(data.error || "We couldn't place that postcode.");
+        }
+        return data;
+      })
+      .then((located) => {
+        if (cancelled) return;
+        setOrigin(located);
+        setGeoStatus("ready");
+      })
+      .catch((error) => {
+        if (cancelled) return;
+        setOrigin(null);
+        setGeoStatus("error");
+        setGeoError(
+          error instanceof Error ? error.message : "We couldn't place that postcode.",
+        );
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [state.postcode]);
+
+  const placed = useMemo(
+    () => (origin ? withDistances(withSchedule(source), origin) : []),
+    [origin, source],
+  );
+  const results = useMemo(
+    () => (origin ? searchListings(state, placed) : []),
+    [origin, placed, state],
+  );
+  const nearestMiles = placed[0]
+    ? Math.min(...placed.map((club) => club.distanceMiles))
+    : null;
+  const farAway =
+    geoStatus === "ready" &&
+    nearestMiles !== null &&
+    nearestMiles > Number(state.radius);
 
   function update(next: Record<string, string | undefined>) {
     const params = new URLSearchParams(searchParams.toString());
@@ -85,7 +139,7 @@ export function ClubsExplorer({
     });
   }
 
-  const district = postcodeDistrict(state.postcode);
+  const district = origin?.district || postcodeDistrict(state.postcode) || "you";
   const nounPlural = noun === "club" ? "clubs" : `${noun}s`;
 
   return (
@@ -108,7 +162,7 @@ export function ClubsExplorer({
             <span className="gradient-text">{district}</span>
           </h1>
           <div style={{ fontSize: 14, color: "rgba(247,245,255,.6)" }}>
-            Free to search. No account. Contact details shown in full.
+            Free to search. No account. Contact details are the club or venue&apos;s published ones.
           </div>
         </div>
         <form
@@ -119,7 +173,7 @@ export function ClubsExplorer({
             update({
               q: String(form.get("q") || ""),
               postcode: String(form.get("postcode") || "SO14 3ZE"),
-              radius: String(form.get("radius") || "5"),
+              radius: parseRadius(String(form.get("radius") || DEFAULT_SEARCH_RADIUS)),
               day: String(form.get("day") || "any"),
               age: String(form.get("age") || "any"),
             });
@@ -136,9 +190,11 @@ export function ClubsExplorer({
           <label className="search-field" style={{ flex: 0.6 }}>
             <span className="field-label">Within</span>
             <select name="radius" defaultValue={state.radius} key={state.radius}>
-              <option value="2">2 miles</option>
-              <option value="5">5 miles</option>
-              <option value="10">10 miles</option>
+              {SEARCH_RADII.map((item) => (
+                <option key={item.id} value={item.id}>
+                  {item.label}
+                </option>
+              ))}
             </select>
           </label>
           <label className="search-field" style={{ flex: 0.6 }}>
@@ -244,7 +300,8 @@ export function ClubsExplorer({
               <strong style={{ color: "#F7F5FF", fontSize: 16 }}>
                 {results.length} {results.length === 1 ? noun : nounPlural}
               </strong>{" "}
-              · {sessionCount(results)} sessions within {state.radius} miles
+              · {sessionCount(results)} sessions within{" "}
+              {searchRadiusLabel(state.radius)} of {district}
             </div>
             <label style={{ fontSize: 13, fontWeight: 600, color: "#3B96DC" }}>
               Sort:{" "}
@@ -272,7 +329,7 @@ export function ClubsExplorer({
               <Link
                 key={club.slug}
                 id={`listing-${club.slug}`}
-                href={`${detailBasePath}/${club.slug}`}
+                href={`${detailBasePath}/${club.slug}?postcode=${encodeURIComponent(state.postcode)}`}
                 className={`result-card${selectedSlug === club.slug ? " selected" : ""}`}
                 style={{
                   borderLeftColor: offerColor(club.offer),
@@ -302,7 +359,7 @@ export function ClubsExplorer({
                           marginTop: 5,
                         }}
                       >
-                        {club.venue} · {club.distanceMiles} miles · {club.days}
+                        {club.venue} · {formatMiles(club.distanceMiles)} · {club.days}
                       </div>
                       {club.sessions.some((session) => session.demo) ? (
                         <div
@@ -355,13 +412,21 @@ export function ClubsExplorer({
               </Link>
             ))}
 
-            <div className={`honesty-card${results.length === 0 ? " honesty-card-empty" : ""}`}>
+            <div
+              className={`honesty-card${
+                results.length === 0 || geoStatus !== "ready" ? " honesty-card-empty" : ""
+              }`}
+            >
               <div>
                 <div
                   className="display"
                   style={{ fontSize: 18, color: "#FFC94D", marginBottom: 5 }}
                 >
-                  Know a {suggestNoun} that should be on here?
+                  {geoStatus === "error"
+                    ? "We need a real UK postcode"
+                    : farAway
+                      ? `Nothing near ${district} yet`
+                      : `Know a ${suggestNoun} that should be on here?`}
                 </div>
                 <div
                   style={{
@@ -370,9 +435,15 @@ export function ClubsExplorer({
                     maxWidth: "56ch",
                   }}
                 >
-                  {results.length === 0
-                    ? "Nothing matched that search. Send us a name and we'll chase it."
-                    : `We're still adding ${nounPlural} across Hampshire. If yours isn't listed, tell us.`}
+                  {geoStatus === "loading"
+                    ? "Placing that postcode on the map…"
+                    : geoStatus === "error"
+                      ? geoError
+                      : farAway
+                      ? `Nothing is within ${searchRadiusLabel(state.radius)} of ${district}. These listings are in Southampton and Hampshire.`
+                      : results.length === 0
+                        ? "Nothing matched that search. Send us a name and we'll chase it."
+                        : `We're still adding ${nounPlural} across Hampshire. If yours isn't listed, tell us.`}
                 </div>
               </div>
               <Link href="/suggest" className="btn-sun">
@@ -388,6 +459,7 @@ export function ClubsExplorer({
               {mapOpen ? (
                 <ClubsMap
                   listings={results}
+                  origin={origin}
                   selectedSlug={selectedSlug}
                   detailBasePath={detailBasePath}
                   onSelect={selectListing}
@@ -414,14 +486,46 @@ export function ClubsExplorer({
               </span>
               <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
                 <span style={{ width: 10, height: 10, borderRadius: "50%", background: "#FFC94D" }} />
-                Access verified
+                Club-reported access
               </span>
             </div>
+            {isPlatformClientEnabled() ? (
             <form
               className="save-card"
               onSubmit={(event) => {
                 event.preventDefault();
-                setSaved(true);
+                setSaveError("");
+                const form = new FormData(event.currentTarget);
+                void fetch("/api/searches", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({
+                    email: String(form.get("email")),
+                    q: state.q,
+                    postcode: state.postcode,
+                    radius: state.radius,
+                    day: state.day,
+                    age: state.age,
+                    gender: state.gender,
+                    accessible: state.accessible,
+                    filters: state.filters,
+                  }),
+                })
+                  .then(async (response) => {
+                    const data = (await response.json()) as { error?: string; message?: string };
+                    if (!response.ok) {
+                      throw new Error(data.error || `Could not save (${response.status})`);
+                    }
+                    setSaved(
+                      data.message ||
+                        "Saved. If this were live we would email when a matching session appears.",
+                    );
+                  })
+                  .catch((error) => {
+                    setSaveError(
+                      error instanceof Error ? error.message : "Could not save that search.",
+                    );
+                  });
               }}
             >
               <div className="display" style={{ fontSize: 17, marginBottom: 8 }}>
@@ -434,18 +538,22 @@ export function ClubsExplorer({
                   marginBottom: 14,
                 }}
               >
-                We&apos;ll email you when a new {state.q || "session"} within{" "}
-                {state.radius} miles is added. Nothing else, ever.
+                We&apos;ll store this search against your email. If this were
+                live we&apos;d write when a new {state.q || "session"} within{" "}
+                {searchRadiusLabel(state.radius)} is added. Nothing is emailed
+                from this demo.
               </div>
               {saved ? (
                 <p style={{ margin: 0, color: "#FFC94D", fontWeight: 600 }}>
-                  Saved. We&apos;ll only write if a matching session appears.
+                  {saved}
                 </p>
               ) : (
-                <div style={{ display: "flex", gap: 8 }}>
+                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                   <input
+                    name="email"
                     type="email"
                     required
+                    defaultValue={adult?.email ?? ""}
                     placeholder="your@email.co.uk"
                     aria-label="Email address"
                   />
@@ -454,7 +562,13 @@ export function ClubsExplorer({
                   </button>
                 </div>
               )}
+              {saveError ? (
+                <p className="form-error" style={{ marginTop: 10 }}>
+                  {saveError}
+                </p>
+              ) : null}
             </form>
+            ) : null}
           </div>
         </aside>
       </div>

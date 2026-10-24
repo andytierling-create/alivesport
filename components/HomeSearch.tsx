@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { AGE_BANDS } from "@/data/clubs";
+import { DEFAULT_SEARCH_RADIUS, SEARCH_RADII } from "@/lib/search";
 
 export function HomeSearch() {
   return (
@@ -11,6 +12,16 @@ export function HomeSearch() {
       <label className="search-field" style={{ flex: 0.8 }}>
         <span className="field-label">Near</span>
         <input name="postcode" defaultValue="SO14 3ZE" />
+      </label>
+      <label className="search-field" style={{ flex: 0.55 }}>
+        <span className="field-label">Within</span>
+        <select name="radius" defaultValue={DEFAULT_SEARCH_RADIUS}>
+          {SEARCH_RADII.map((item) => (
+            <option key={item.id} value={item.id}>
+              {item.label}
+            </option>
+          ))}
+        </select>
       </label>
       <label className="search-field" style={{ flex: 0.65 }}>
         <span className="field-label">Who for</span>
@@ -38,10 +49,10 @@ export function HomeSearch() {
 }
 
 const popular = [
-  { q: "Junior netball", label: "Junior netball" },
+  { q: "Walking football", label: "Walking football" },
   { q: "Wheelchair basketball", label: "Wheelchair basketball" },
-  { q: "Women's beginner running", label: "Women's beginner running" },
-  { q: "Seniors swim", label: "Seniors swim" },
+  { q: "parkrun", label: "parkrun" },
+  { q: "Swim", label: "Swim" },
 ];
 
 export function PopularChips() {

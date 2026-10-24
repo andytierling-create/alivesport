@@ -4,6 +4,7 @@ import { useEffect, useRef } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import type { Club } from "@/data/clubs";
+import type { GeoPoint } from "@/lib/platform/geo";
 import { offerColor } from "@/lib/search";
 
 const SOUTHAMPTON: L.LatLngExpression = [50.9097, -1.4044];
@@ -18,11 +19,13 @@ function escapeHtml(value: string) {
 
 export default function ClubsMap({
   listings,
+  origin,
   selectedSlug,
   detailBasePath,
   onSelect,
 }: {
   listings: Club[];
+  origin?: GeoPoint | null;
   selectedSlug?: string | null;
   detailBasePath: string;
   onSelect?: (slug: string) => void;
@@ -71,6 +74,18 @@ export default function ClubsMap({
 
     group.clearLayers();
 
+    if (origin) {
+      const you = L.circleMarker([origin.lat, origin.lng], {
+        radius: 8,
+        color: "#FFC94D",
+        fillColor: "#FFC94D",
+        fillOpacity: 1,
+        weight: 2,
+      });
+      you.bindPopup("Your postcode");
+      you.addTo(group);
+    }
+
     for (const listing of listings) {
       const selected = listing.slug === selectedSlug;
       const color = offerColor(listing.offer);
@@ -89,19 +104,20 @@ export default function ClubsMap({
       marker.addTo(group);
     }
 
-    if (listings.length === 0) {
+    const points: L.LatLngExpression[] = [
+      ...listings.map((listing) => [listing.lat, listing.lng] as L.LatLngExpression),
+      ...(origin ? [[origin.lat, origin.lng] as L.LatLngExpression] : []),
+    ];
+    if (points.length === 0) {
       map.setView(SOUTHAMPTON, 12);
-    } else if (listings.length === 1) {
-      map.setView([listings[0].lat, listings[0].lng], 14);
+    } else if (points.length === 1) {
+      map.setView(points[0], origin && listings.length === 0 ? 11 : 14);
     } else {
-      map.fitBounds(
-        L.latLngBounds(listings.map((listing) => [listing.lat, listing.lng])),
-        { padding: [36, 36], maxZoom: 14 },
-      );
+      map.fitBounds(L.latLngBounds(points), { padding: [36, 36], maxZoom: 14 });
     }
 
     requestAnimationFrame(() => map.invalidateSize());
-  }, [listings, selectedSlug, detailBasePath]);
+  }, [listings, origin, selectedSlug, detailBasePath]);
 
   return <div ref={containerRef} className="leaflet-host" />;
 }

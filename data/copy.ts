@@ -66,7 +66,7 @@ export const GROUP_CARDS = [
     title: "Disabled people",
     variant: "disabled" as const,
     body: "Step-free access, hoists, changing places and coach training — stated, not implied.",
-    benefit: "Verified accessibility info before you arrive.",
+    benefit: "Access notes as the venue reports them, before you travel.",
     tilt: "-0.8deg",
   },
   {

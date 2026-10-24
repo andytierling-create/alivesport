@@ -5,31 +5,44 @@ import { useState } from "react";
 import { DemoBanner } from "@/components/DemoBanner";
 import { useDemo } from "@/components/DemoProvider";
 import { AGE_BANDS, GENDERS, ageBandLabel, genderLabel } from "@/data/clubs";
+import { formatEventWhen } from "@/lib/platform/dates";
+
+function defaultStartsAt() {
+  const date = new Date();
+  const diff = (6 - date.getDay() + 7) % 7;
+  date.setDate(date.getDate() + diff);
+  date.setHours(10, 0, 0, 0);
+  const pad = (value: number) => String(value).padStart(2, "0");
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+}
 
 export default function DeskPage() {
-  const { account, club, saveClubListing, addEvent, removeEvent, signInDemo, state } =
+  const { role, org, orgEvents, saveOrg, addEvent, removeEvent, signInDemo, lastNotice } =
     useDemo();
   const [saved, setSaved] = useState(false);
+  const [error, setError] = useState("");
 
-  if (!account || account.role !== "club" || !club) {
+  if (role !== "org" || !org) {
     return (
       <div className="page-shell">
         <DemoBanner />
         <section className="indent account-hero" style={{ maxWidth: 640 }}>
           <div className="eyebrow">Club desk</div>
-          <h1 className="display h1-clubs">Sign in as a club to post sessions.</h1>
+          <h1 className="display h1-clubs">Sign in as a club to post events.</h1>
           <p className="hero-sub">
             Bitterne Netball already has a Friday floodlit social. Open that
             desk, or register a new listing.
           </p>
           <div className="demo-shortcuts">
-            <Link
-              href="/desk"
+            <button
+              type="button"
               className="btn-sun"
-              onClick={() => signInDemo("club")}
+              onClick={() => {
+                void signInDemo("org").then(() => window.location.assign("/desk"));
+              }}
             >
               Continue as Bitterne Netball
-            </Link>
+            </button>
             <Link href="/join/club" className="btn-navy">
               Register a club
             </Link>
@@ -44,18 +57,59 @@ export default function DeskPage() {
       <DemoBanner />
       <section className="indent account-hero">
         <div className="eyebrow">Club desk</div>
-        <h1 className="display h1-clubs">{club.listing.name}</h1>
+        <h1 className="display h1-clubs">{org.name}</h1>
         <p className="hero-sub">
-          Edit the public listing, then pin a session to the sheet. Players
-          searching in this browser will see it.
+          Post a dated event. Tick publish if it should appear on Find a club,
+          What&apos;s on, and Play. Nothing is emailed from this demo.
         </p>
-        {state.lastNotice ? <aside className="demo-notice">{state.lastNotice}</aside> : null}
+        {lastNotice ? <aside className="demo-notice">{lastNotice}</aside> : null}
         <p className="notify-note">
           Public page:{" "}
-          <Link href={`/clubs/${club.slug}`} style={{ color: "#FFC94D", fontWeight: 600 }}>
-            /clubs/{club.slug}
+          <Link href={`/clubs/${org.slug}`} style={{ color: "#FFC94D", fontWeight: 600 }}>
+            /clubs/{org.slug}
+          </Link>
+          {" · "}
+          <Link href="/embed" style={{ color: "#3B96DC", fontWeight: 600 }}>
+            JS snippet
           </Link>
         </p>
+
+        <h2 className="display desk-heading">Packages</h2>
+        <div className="sku-grid">
+          <label className="sku-card">
+            <input
+              type="checkbox"
+              checked={org.subscription.listing}
+              onChange={(event) => {
+                void saveOrg({
+                  subscription: { listing: event.target.checked },
+                });
+              }}
+            />
+            <div>
+              <strong>Listing</strong>
+              <p>Required to post. A new club starts with this on.</p>
+            </div>
+          </label>
+          <label className="sku-card">
+            <input
+              type="checkbox"
+              checked={org.subscription.notifyArea}
+              onChange={(event) => {
+                void saveOrg({
+                  subscription: { notifyArea: event.target.checked },
+                });
+              }}
+            />
+            <div>
+              <strong>Notify area</strong>
+              <p>Add-on. Preview who would be told — we do not send.</p>
+            </div>
+          </label>
+        </div>
+        {!org.subscription.listing ? (
+          <p className="form-error">Listing is off. Posting will return 402 until you turn it on.</p>
+        ) : null}
 
         <h2 className="display desk-heading">Listing</h2>
         <form
@@ -63,46 +117,46 @@ export default function DeskPage() {
           onSubmit={(event) => {
             event.preventDefault();
             const form = new FormData(event.currentTarget);
-            saveClubListing({
-              ...club.listing,
+            void saveOrg({
               name: String(form.get("name")),
               sport: String(form.get("sport")),
               venue: String(form.get("venue")),
-              phone: String(form.get("phone")),
-              email: String(form.get("email")),
+              contact: {
+                phone: String(form.get("phone")),
+                email: String(form.get("email")),
+              },
               ageBands: [
                 String(form.get("age")) as never,
-                ...club.listing.ageBands.filter((band) => band !== String(form.get("age"))),
+                ...org.ageBands.filter((band) => band !== String(form.get("age"))),
               ],
               gender: String(form.get("gender")) as never,
               accessible: form.get("accessible") === "yes",
-            });
-            setSaved(true);
+            }).then(() => setSaved(true));
           }}
         >
           <label className="search-field">
             <span className="field-label">Club name</span>
-            <input name="name" defaultValue={club.listing.name} required />
+            <input name="name" defaultValue={org.name} required />
           </label>
           <label className="search-field">
             <span className="field-label">Sport</span>
-            <input name="sport" defaultValue={club.listing.sport} required />
+            <input name="sport" defaultValue={org.sport} required />
           </label>
           <label className="search-field">
             <span className="field-label">Venue</span>
-            <input name="venue" defaultValue={club.listing.venue} required />
+            <input name="venue" defaultValue={org.venue} required />
           </label>
           <label className="search-field">
             <span className="field-label">Phone</span>
-            <input name="phone" defaultValue={club.listing.phone} />
+            <input name="phone" defaultValue={org.contact.phone} />
           </label>
           <label className="search-field">
             <span className="field-label">Email</span>
-            <input name="email" type="email" defaultValue={club.listing.email} />
+            <input name="email" type="email" defaultValue={org.contact.email} />
           </label>
           <label className="search-field">
             <span className="field-label">Main age band</span>
-            <select name="age" defaultValue={club.listing.ageBands[0] ?? "adult"}>
+            <select name="age" defaultValue={org.ageBands[0] ?? "adult"}>
               {AGE_BANDS.map((band) => (
                 <option key={band.id} value={band.id}>
                   {band.label}
@@ -112,7 +166,7 @@ export default function DeskPage() {
           </label>
           <label className="search-field">
             <span className="field-label">Who it&apos;s for</span>
-            <select name="gender" defaultValue={club.listing.gender}>
+            <select name="gender" defaultValue={org.gender}>
               {GENDERS.map((item) => (
                 <option key={item.id} value={item.id}>
                   {item.label}
@@ -122,7 +176,7 @@ export default function DeskPage() {
           </label>
           <label className="search-field">
             <span className="field-label">Accessible</span>
-            <select name="accessible" defaultValue={club.listing.accessible ? "yes" : "no"}>
+            <select name="accessible" defaultValue={org.accessible ? "yes" : "no"}>
               <option value="no">No</option>
               <option value="yes">Yes</option>
             </select>
@@ -132,30 +186,42 @@ export default function DeskPage() {
           </button>
         </form>
 
-        <h2 className="display desk-heading">Session sheet</h2>
+        <h2 className="display desk-heading">Events</h2>
         <div className="event-sheet">
-          {club.events.length === 0 ? (
-            <p className="notify-note">No extra sessions yet. Add one below.</p>
+          {orgEvents.length === 0 ? (
+            <p className="notify-note">No events yet. Add one below.</p>
           ) : (
-            club.events.map((event) => (
-              <article key={event.id} className="event-row">
-                <div>
-                  <div className="display" style={{ fontSize: 22 }}>
-                    {event.title}
+            orgEvents.map((item) => {
+              const when = formatEventWhen(item.startsAt);
+              return (
+                <article key={item.id} className="event-row">
+                  <div>
+                    <div className="display" style={{ fontSize: 22 }}>
+                      {item.title}
+                    </div>
+                    <p>
+                      {when.label} · {item.price}
+                      <br />
+                      {item.ageBands.map(ageBandLabel).join(", ")} · {genderLabel(item.gender)}
+                      {item.accessible ? " · Accessible" : ""}
+                      <br />
+                      {item.publishOnAliveSport ? "Published on Alive Sport" : "Club only — hidden from search"}
+                      {` · ${item.source}`}
+                    </p>
+                    {item.notes ? <p className="event-notes">{item.notes}</p> : null}
                   </div>
-                  <p>
-                    {event.day} · {event.time} · {event.price}
-                    <br />
-                    {event.ageBands.map(ageBandLabel).join(", ")} · {genderLabel(event.gender)}
-                    {event.accessible ? " · Accessible" : ""}
-                  </p>
-                  {event.notes ? <p className="event-notes">{event.notes}</p> : null}
-                </div>
-                <button type="button" className="event-remove" onClick={() => removeEvent(event.id)}>
-                  Take down
-                </button>
-              </article>
-            ))
+                  <button
+                    type="button"
+                    className="event-remove"
+                    onClick={() => {
+                      void removeEvent(item.id);
+                    }}
+                  >
+                    Take down
+                  </button>
+                </article>
+              );
+            })
           )}
         </div>
 
@@ -163,31 +229,34 @@ export default function DeskPage() {
           className="desk-form"
           onSubmit={(event) => {
             event.preventDefault();
+            setError("");
             const form = new FormData(event.currentTarget);
-            addEvent({
+            const startsAt = new Date(String(form.get("startsAt"))).toISOString();
+            void addEvent({
               title: String(form.get("title")),
-              day: String(form.get("day")),
-              time: String(form.get("time")),
+              startsAt,
               price: String(form.get("price")),
               ageBands: [String(form.get("age")) as never],
               gender: String(form.get("gender")) as never,
               accessible: form.get("accessible") === "yes",
               notes: String(form.get("notes") || ""),
-            });
-            event.currentTarget.reset();
+              publishOnAliveSport: form.get("publish") === "yes",
+            })
+              .then(() => {
+                event.currentTarget.reset();
+              })
+              .catch((err) => {
+                setError(err instanceof Error ? err.message : "Could not post.");
+              });
           }}
         >
           <label className="search-field">
-            <span className="field-label">Session title</span>
+            <span className="field-label">Event title</span>
             <input name="title" required placeholder="Saturday beginners" />
           </label>
           <label className="search-field">
-            <span className="field-label">Day</span>
-            <input name="day" required defaultValue="Saturday" />
-          </label>
-          <label className="search-field">
-            <span className="field-label">Time</span>
-            <input name="time" required defaultValue="10:00am" />
+            <span className="field-label">Starts</span>
+            <input name="startsAt" type="datetime-local" required defaultValue={defaultStartsAt()} />
           </label>
           <label className="search-field">
             <span className="field-label">Price</span>
@@ -205,7 +274,7 @@ export default function DeskPage() {
           </label>
           <label className="search-field">
             <span className="field-label">Who it&apos;s for</span>
-            <select name="gender" defaultValue={club.listing.gender}>
+            <select name="gender" defaultValue={org.gender}>
               {GENDERS.map((item) => (
                 <option key={item.id} value={item.id}>
                   {item.label}
@@ -215,17 +284,22 @@ export default function DeskPage() {
           </label>
           <label className="search-field">
             <span className="field-label">Accessible</span>
-            <select name="accessible" defaultValue={club.listing.accessible ? "yes" : "no"}>
+            <select name="accessible" defaultValue={org.accessible ? "yes" : "no"}>
               <option value="no">No</option>
               <option value="yes">Yes</option>
             </select>
           </label>
-          <label className="search-field">
+          <label className="search-field" style={{ gridColumn: "1 / -1" }}>
             <span className="field-label">Notes</span>
             <input name="notes" placeholder="Beginners welcome" />
           </label>
+          <label className="check-row">
+            <input name="publish" type="checkbox" value="yes" defaultChecked />
+            Publish on Alive Sport
+          </label>
+          {error ? <p className="form-error">{error}</p> : null}
           <button className="btn-gradient" type="submit">
-            Post session
+            Post event
           </button>
         </form>
       </section>

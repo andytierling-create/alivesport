@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { CLUB_SETUP_COPY } from "@/data/copy";
-import { isDemoEnabled } from "@/lib/demo-flag";
+import { isPlatformEnabled } from "@/lib/demo-flag";
 
 export const metadata: Metadata = {
   title: "For clubs",
@@ -47,9 +47,10 @@ export default function ForClubsPage() {
               Reach people who don&apos;t follow you yet
             </h2>
             <p>
-              Tell people nearby about events and news. Facebook only reaches
-              people who already follow the club. Word of mouth only reaches
-              people who already know someone. This is the step up from both.
+              Two packages: a listing so events appear in Find a club, and an
+              optional notify-area add-on for adults nearby who asked to hear.
+              Facebook only reaches people who already follow the club. Nothing
+              is emailed from this site yet — checkout comes later.
             </p>
           </article>
         </div>
@@ -76,7 +77,7 @@ export default function ForClubsPage() {
               You add your sessions once. We keep them findable. No rewriting
               your website, no commission, no extra app.
             </p>
-            <Link href={isDemoEnabled() ? "/join/club" : "/suggest"} className="btn-navy">
+            <Link href={isPlatformEnabled() ? "/join/club" : "/suggest"} className="btn-navy">
               Register your club
             </Link>
           </div>

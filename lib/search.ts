@@ -5,6 +5,30 @@ export const FILTERS = [
   { id: "evenings", label: "Evenings" },
 ] as const;
 
+export const SEARCH_RADII = [
+  { id: "1", miles: 1, label: "1 mile" },
+  { id: "2", miles: 2, label: "2 miles" },
+  { id: "5", miles: 5, label: "5 miles" },
+  { id: "10", miles: 10, label: "10 miles" },
+  { id: "15", miles: 15, label: "15 miles" },
+  { id: "25", miles: 25, label: "25 miles" },
+] as const;
+
+export type SearchRadius = (typeof SEARCH_RADII)[number]["id"];
+export const DEFAULT_SEARCH_RADIUS: SearchRadius = "5";
+
+export function parseRadius(raw: string | undefined): SearchRadius {
+  const value = String(raw ?? "").trim();
+  return SEARCH_RADII.some((item) => item.id === value)
+    ? (value as SearchRadius)
+    : DEFAULT_SEARCH_RADIUS;
+}
+
+export function searchRadiusLabel(raw: string | undefined) {
+  const radius = parseRadius(raw);
+  return SEARCH_RADII.find((item) => item.id === radius)?.label ?? `${radius} miles`;
+}
+
 export type FilterId = (typeof FILTERS)[number]["id"];
 export type SortId = "nearest" | "soonest" | "price";
 export type AccessibleFilter = "yes" | "no" | "";
@@ -51,7 +75,7 @@ export function parseSearch(
   return {
     q: first("q"),
     postcode: first("postcode", "SO14 3ZE"),
-    radius: first("radius", "5"),
+    radius: parseRadius(first("radius", DEFAULT_SEARCH_RADIUS)),
     day: first("day", "any"),
     age: first("age"),
     gender: first("gender"),
@@ -62,8 +86,8 @@ export function parseSearch(
 }
 
 export function postcodeDistrict(postcode: string) {
-  const match = postcode.trim().toUpperCase().match(/^[A-Z]{1,2}\d{1,2}/);
-  return match?.[0] ?? "SO14";
+  const match = postcode.trim().toUpperCase().match(/^[A-Z]{1,2}\d[A-Z\d]?/);
+  return match?.[0] ?? "";
 }
 
 function matchesQuery(club: Club, q: string) {
@@ -126,7 +150,7 @@ function matchesDay(club: Club, day: string) {
 }
 
 export function searchListings(state: SearchState, listings: Club[]): Club[] {
-  const radius = Number(state.radius) || 5;
+  const radius = Number(parseRadius(state.radius));
 
   const results = listings.filter((club) => {
     if (club.distanceMiles > radius) return false;

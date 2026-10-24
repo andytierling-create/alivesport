@@ -2,7 +2,9 @@ import Link from "next/link";
 import { AthleteFigures, GroupMark } from "@/components/AthleteFigures";
 import { HomeSearch, PopularChips } from "@/components/HomeSearch";
 import { PhotoSlot, Tag } from "@/components/Media";
-import { clubs, featuredSessions, getClub } from "@/data/clubs";
+import { clubs, featuredSlugs, getClub } from "@/data/clubs";
+import { formatMiles, locatePostcode, withDistances } from "@/lib/platform/geo";
+import { withSchedule } from "@/lib/schedule";
 import {
   CLUB_SETUP_COPY,
   GROUP_CARDS,
@@ -13,11 +15,36 @@ import {
   USER_NOTIFICATIONS_NOTE,
   WHY_SPORT_MATTERS,
 } from "@/data/copy";
-import { listingInventory } from "@/lib/catalog";
+import { listingInventory, listingsFromPublishedEvents } from "@/lib/catalog";
+import { isPlatformEnabled } from "@/lib/demo-flag";
+import { publicEvents, publicOrg, readPlatform } from "@/lib/platform/store";
 
-const inventory = listingInventory(clubs);
+export const dynamic = "force-dynamic";
 
-export default function HomePage() {
+async function homeInventory() {
+  if (!isPlatformEnabled()) return listingInventory(clubs);
+  const state = await readPlatform();
+  return listingInventory(
+    listingsFromPublishedEvents(
+      clubs,
+      publicEvents(state),
+      state.orgs.map(publicOrg),
+    ),
+  );
+}
+
+export default async function HomePage() {
+  const inventory = await homeInventory();
+  const origin = await locatePostcode("SO14 3ZE");
+  const featured = featuredSlugs
+    .map((slug) => {
+      const club = withSchedule(clubs).find((item) => item.slug === slug);
+      if (!club) return null;
+      const miles = origin ? withDistances([club], origin)[0]?.distanceMiles : null;
+      return { club, miles };
+    })
+    .filter((item): item is { club: (typeof clubs)[number]; miles: number | null } => item !== null);
+
   return (
     <div className="page-shell">
       <div className="glow-pink" />
@@ -25,7 +52,7 @@ export default function HomePage() {
 
       <section className="hero-home">
         <div className="hero-copy">
-          <div className="live-pill">Southampton & Hampshire · live now</div>
+          <div className="live-pill">Southampton & Hampshire</div>
           <div className="hero-headers" aria-label={HERO_HEADERS.join(". ")}>
             {HERO_HEADERS.map((line) => (
               <p key={line}>{line}</p>
@@ -42,8 +69,9 @@ export default function HomePage() {
           <p className="mission-statement">{MISSION_STATEMENT}</p>
           <p className="two-sided-purpose">{TWO_SIDED_PURPOSE}</p>
           <p className="hero-sub">
-            Netball on a Tuesday. Boccia on a Saturday. Walking football at ten
-            past ten. Free to search, no account, no fuss.
+            Walking football on a Monday. parkrun on a Saturday. A leisure
+            centre when you need the timetable. Free to search, no account, no
+            fuss.
           </p>
           <HomeSearch />
           <p className="notify-note">{USER_NOTIFICATIONS_NOTE}</p>
@@ -139,18 +167,25 @@ export default function HomePage() {
           </Link>
         </div>
         <div className="session-grid">
-          {featuredSessions.map((session) => (
-            <Link key={session.slug} href={`/clubs/${session.slug}`} className="session-card">
+          {featured.map(({ club, miles }) => (
+            <Link
+              key={club.slug}
+              href={`/clubs/${club.slug}?postcode=SO14+3ZE`}
+              className="session-card"
+            >
               <PhotoSlot
                 label="club photo 4:3"
-                src={getClub(session.slug)?.photo}
+                src={getClub(club.slug)?.photo}
               />
               <div className="card-body">
-                <div className="meta-sun">{session.when}</div>
-                <div className="card-title">{session.title}</div>
-                <div className="card-meta">{session.meta}</div>
+                <div className="meta-sun">{club.days}</div>
+                <div className="card-title">{club.name}</div>
+                <div className="card-meta">
+                  {club.venue}
+                  {miles !== null ? ` · ${formatMiles(miles)}` : ""}
+                </div>
                 <div className="tags">
-                  {session.tags.map((tag) => (
+                  {club.tags.map((tag) => (
                     <Tag key={tag.label} {...tag} />
                   ))}
                 </div>

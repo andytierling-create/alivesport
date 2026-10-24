@@ -4,11 +4,13 @@ import Link from "next/link";
 import { useState } from "react";
 import { DemoBanner } from "@/components/DemoBanner";
 import { useDemo } from "@/components/DemoProvider";
-import { DEMO_CLUB, DEMO_PLAYER } from "@/lib/demo-store";
+import { isDemoEnabled } from "@/lib/demo-flag";
+import { DEMO_ADULT, DEMO_ORG } from "@/lib/platform/types";
 
 export default function SignInPage() {
   const { signIn, signInDemo } = useDemo();
   const [error, setError] = useState("");
+  const demo = isDemoEnabled();
 
   return (
     <div className="page-shell">
@@ -17,40 +19,47 @@ export default function SignInPage() {
         <div className="eyebrow">Sign in</div>
         <h1 className="display h1-clubs">Same site. Two keys.</h1>
         <p className="hero-sub">
-          Seeded logins are ready. Or use an account you registered in this
-          browser.
+          Seeded logins hit the local API and set a session cookie. Or use an
+          account you registered here.
         </p>
-        <div className="demo-shortcuts" style={{ marginBottom: 28 }}>
-          <Link
-            href="/play"
-            className="btn-sun"
-            onClick={() => signInDemo("player")}
-          >
-            Alex · looking for play
-          </Link>
-          <Link
-            href="/desk"
-            className="btn-navy"
-            onClick={() => signInDemo("club")}
-          >
-            Bitterne Netball · club desk
-          </Link>
-        </div>
-        <p className="notify-note">
-          {DEMO_PLAYER.email} / {DEMO_PLAYER.password} · {DEMO_CLUB.email} /{" "}
-          {DEMO_CLUB.password}
-        </p>
+        {demo ? (
+          <>
+            <div className="demo-shortcuts" style={{ marginBottom: 28 }}>
+              <button
+                type="button"
+                className="btn-sun"
+                onClick={() => {
+                  void signInDemo("adult").then(() => window.location.assign("/play"));
+                }}
+              >
+                Alex · looking for play
+              </button>
+              <button
+                type="button"
+                className="btn-navy"
+                onClick={() => {
+                  void signInDemo("org").then(() => window.location.assign("/desk"));
+                }}
+              >
+                Bitterne Netball · club desk
+              </button>
+            </div>
+            <p className="notify-note">
+              {DEMO_ADULT.email} / {DEMO_ADULT.password} · {DEMO_ORG.email} /{" "}
+              {DEMO_ORG.password}
+            </p>
+          </>
+        ) : null}
         <form
           className="desk-form"
           onSubmit={(event) => {
             event.preventDefault();
             const form = new FormData(event.currentTarget);
-            try {
-              const role = signIn(String(form.get("email")), String(form.get("password")));
-              window.location.assign(role === "club" ? "/desk" : "/play");
-            } catch (err) {
-              setError(err instanceof Error ? err.message : "Could not sign in.");
-            }
+            void signIn(String(form.get("email")), String(form.get("password")))
+              .then((role) => window.location.assign(role === "org" ? "/desk" : "/play"))
+              .catch((err) => {
+                setError(err instanceof Error ? err.message : "Could not sign in.");
+              });
           }}
         >
           <label className="search-field">

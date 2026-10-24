@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { BrandLockup } from "./Brand";
 import { useDemo } from "./DemoProvider";
-import { isDemoEnabled } from "@/lib/demo-flag";
+import { isPlatformClientEnabled } from "@/lib/demo-flag";
 
 const links = [
   { href: "/clubs", label: "Find a club", match: "/clubs" },
@@ -18,8 +18,8 @@ const links = [
 export function Header() {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
-  const demo = isDemoEnabled();
-  const { account, player, club, signOut } = useDemo();
+  const platform = isPlatformClientEnabled();
+  const { role, adult, org, signOut } = useDemo();
 
   return (
     <header className={`masthead${open ? " open" : ""}`}>
@@ -50,48 +50,48 @@ export function Header() {
             </Link>
           );
         })}
-        {demo && account?.role === "player" ? (
+        {platform && role === "adult" ? (
           <Link
             href="/play"
             className={pathname.startsWith("/play") ? "active" : undefined}
             onClick={() => setOpen(false)}
           >
-            {player?.displayName.split(" ")[0] ?? "Play"}
+            {adult?.displayName.split(" ")[0] ?? "Play"}
           </Link>
         ) : null}
-        {demo && account?.role === "club" ? (
+        {platform && role === "org" ? (
           <Link
             href="/desk"
             className={pathname.startsWith("/desk") ? "active" : undefined}
             onClick={() => setOpen(false)}
           >
-            {club?.listing.name ?? "Club desk"}
+            {org?.name ?? "Club desk"}
           </Link>
         ) : null}
-        {demo && account ? (
+        {platform && role ? (
           <button
             type="button"
             className="nav-signout"
             onClick={() => {
-              signOut();
+              void signOut();
               setOpen(false);
             }}
           >
             Sign out
           </button>
         ) : null}
-        {demo && !account ? (
+        {platform && !role ? (
           <Link href="/sign-in" onClick={() => setOpen(false)}>
             Sign in
           </Link>
         ) : null}
-        {demo ? (
+        {platform ? (
           <Link
-            href={account?.role === "club" ? "/desk" : account ? "/play" : "/join"}
+            href={role === "org" ? "/desk" : role ? "/play" : "/join"}
             className="btn-cta"
             onClick={() => setOpen(false)}
           >
-            {account?.role === "club" ? "Club desk" : account ? "Your play" : "Join"}
+            {role === "org" ? "Club desk" : role ? "Your play" : "Join"}
           </Link>
         ) : (
           <Link href="/for-clubs" className="btn-cta" onClick={() => setOpen(false)}>

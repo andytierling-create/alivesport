@@ -11,8 +11,8 @@ export default function JoinPage() {
           Who are you turning up as?
         </h1>
         <p className="hero-sub" style={{ marginBottom: 36 }}>
-          Two sides of the same pitch. One browser. Pick a door — you can switch
-          whenever you like.
+          Two sides of the same pitch. Pick a door — you can switch whenever
+          you like.
         </p>
         <div className="join-grid">
           <Link href="/join/play" className="join-card play-card">
@@ -24,7 +24,7 @@ export default function JoinPage() {
               Set a postcode, ages, and whether you need accessible sessions.
               Then search the same list clubs are writing into.
             </p>
-            <span className="join-go">Make a player profile →</span>
+            <span className="join-go">Make an adult account →</span>
           </Link>
           <Link href="/join/club" className="join-card club-card">
             <div className="eyebrow" style={{ color: "#3B96DC" }}>
@@ -43,7 +43,7 @@ export default function JoinPage() {
           <Link href="/sign-in" style={{ color: "#FFC94D", fontWeight: 600 }}>
             Sign in
           </Link>{" "}
-          or jump in as the seeded player or Bitterne Netball.
+          or jump in as Alex or Bitterne Netball.
         </p>
       </section>
     </div>

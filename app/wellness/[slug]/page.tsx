@@ -6,6 +6,7 @@ import { findWellness } from "@/lib/catalog";
 
 type Props = {
   params: Promise<{ slug: string }>;
+  searchParams: Promise<{ postcode?: string }>;
 };
 
 export function generateStaticParams() {
@@ -17,9 +18,17 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return { title: findWellness(slug)?.name ?? "Wellness" };
 }
 
-export default async function WellnessDetailPage({ params }: Props) {
+export default async function WellnessDetailPage({ params, searchParams }: Props) {
   const { slug } = await params;
+  const { postcode } = await searchParams;
   const venue = findWellness(slug);
   if (!venue) notFound();
-  return <ClubDetailView slug={slug} initialClub={venue} backHref="/wellness" />;
+  return (
+    <ClubDetailView
+      slug={slug}
+      initialClub={venue}
+      backHref="/wellness"
+      fromPostcode={postcode}
+    />
+  );
 }

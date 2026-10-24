@@ -7,7 +7,7 @@ import { useDemo } from "@/components/DemoProvider";
 import { AGE_BANDS, GENDERS, type AgeBand, type Gender } from "@/data/clubs";
 
 export default function JoinClubPage() {
-  const { registerClub, signInDemo } = useDemo();
+  const { registerOrg, signInDemo } = useDemo();
   const [error, setError] = useState("");
 
   return (
@@ -17,33 +17,31 @@ export default function JoinClubPage() {
         <div className="eyebrow">Club</div>
         <h1 className="display h1-clubs">Put the club where people can find it.</h1>
         <p className="hero-sub">
-          Ten minutes of form, then events. Or open the seeded Bitterne desk
-          and add a session to a listing that already exists.
+          This creates an organisation with the listing package on. The notify
+          add-on stays off until you toggle it on the desk.
         </p>
         <form
           className="desk-form"
           onSubmit={(event) => {
             event.preventDefault();
             const form = new FormData(event.currentTarget);
-            try {
-              registerClub(String(form.get("email")), String(form.get("password")), {
-                name: String(form.get("name")),
-                sport: String(form.get("sport")),
-                venue: String(form.get("venue")),
-                phone: String(form.get("phone") || "023 0000 0000"),
-                email: String(form.get("clubEmail") || form.get("email")),
-                website: "https://example.com/club",
-                ageBands: [String(form.get("age")) as AgeBand],
-                gender: String(form.get("gender")) as Gender,
-                accessible: form.get("accessible") === "yes",
-                lat: 50.9097,
-                lng: -1.4044,
-                distanceMiles: 1.8,
+            void registerOrg({
+              email: String(form.get("email")),
+              password: String(form.get("password")),
+              name: String(form.get("name")),
+              sport: String(form.get("sport")),
+              venue: String(form.get("venue")),
+              postcode: String(form.get("postcode")),
+              phone: String(form.get("phone") || ""),
+              contactEmail: String(form.get("clubEmail") || form.get("email")),
+              ageBands: [String(form.get("age")) as AgeBand],
+              gender: String(form.get("gender")) as Gender,
+              accessible: form.get("accessible") === "yes",
+            })
+              .then(() => window.location.assign("/desk"))
+              .catch((err) => {
+                setError(err instanceof Error ? err.message : "Could not register.");
               });
-              window.location.assign("/desk");
-            } catch (err) {
-              setError(err instanceof Error ? err.message : "Could not register.");
-            }
           }}
         >
           <label className="search-field">
@@ -56,7 +54,11 @@ export default function JoinClubPage() {
           </label>
           <label className="search-field">
             <span className="field-label">Venue</span>
-            <input name="venue" required placeholder="Portswood Rec" />
+            <input name="venue" required placeholder="Bitterne Leisure Centre" />
+          </label>
+          <label className="search-field">
+            <span className="field-label">Venue postcode</span>
+            <input name="postcode" required placeholder="SO18 6AQ" />
           </label>
           <label className="search-field">
             <span className="field-label">Login email</span>
@@ -107,13 +109,15 @@ export default function JoinClubPage() {
           </button>
         </form>
         <div className="demo-shortcuts">
-          <Link
-            href="/desk"
+          <button
+            type="button"
             className="btn-sun"
-            onClick={() => signInDemo("club")}
+            onClick={() => {
+              void signInDemo("org").then(() => window.location.assign("/desk"));
+            }}
           >
-            Continue as Bitterne Netball
-          </Link>
+            Continue as Bitterne Leisure Centre
+          </button>
           <Link href="/sign-in" style={{ color: "#3B96DC", fontWeight: 600 }}>
             I already have a demo login
           </Link>

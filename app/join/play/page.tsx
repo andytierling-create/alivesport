@@ -4,40 +4,42 @@ import Link from "next/link";
 import { useState } from "react";
 import { DemoBanner } from "@/components/DemoBanner";
 import { useDemo } from "@/components/DemoProvider";
-import { AGE_BANDS, GENDERS } from "@/data/clubs";
+import { AGE_BANDS, GENDERS, type AgeBand } from "@/data/clubs";
 
 export default function JoinPlayPage() {
-  const { registerPlayer, signInDemo } = useDemo();
+  const { registerAdult, signInDemo } = useDemo();
   const [error, setError] = useState("");
 
   return (
     <div className="page-shell">
       <DemoBanner />
       <section className="indent account-hero" style={{ maxWidth: 640 }}>
-        <div className="eyebrow">Player</div>
+        <div className="eyebrow">Adult account</div>
         <h1 className="display h1-clubs">Tell us who you&apos;re finding play for.</h1>
         <p className="hero-sub">
-          This stays in your browser. Use a made-up email. Or skip the form and
-          walk in as Alex.
+          Search bands are who the sessions are for, not a child profile. We
+          do not store children&apos;s names, dates of birth, or schools.
         </p>
         <form
           className="desk-form"
           onSubmit={(event) => {
             event.preventDefault();
             const form = new FormData(event.currentTarget);
-            try {
-              registerPlayer(String(form.get("email")), String(form.get("password")), {
-                displayName: String(form.get("name")),
-                postcode: String(form.get("postcode") || "SO14 3ZE"),
-                ageBand: String(form.get("age")) as never,
-                gender: String(form.get("gender")) as never,
-                accessible: form.get("accessible") === "yes",
-                notifyOptIn: form.get("notify") === "yes",
+            const age = String(form.get("age"));
+            void registerAdult({
+              email: String(form.get("email")),
+              password: String(form.get("password")),
+              displayName: String(form.get("name")),
+              postcode: String(form.get("postcode") || "SO14 3ZE"),
+              lookingForAgeBands: age === "any" ? [] : [age as AgeBand],
+              gender: String(form.get("gender")) as never,
+              accessible: form.get("accessible") === "yes",
+              notifyOptIn: form.get("notify") === "yes",
+            })
+              .then(() => window.location.assign("/play"))
+              .catch((err) => {
+                setError(err instanceof Error ? err.message : "Could not register.");
               });
-              window.location.assign("/play");
-            } catch (err) {
-              setError(err instanceof Error ? err.message : "Could not register.");
-            }
           }}
         >
           <label className="search-field">
@@ -57,7 +59,7 @@ export default function JoinPlayPage() {
             <input name="postcode" defaultValue="SO14 3ZE" />
           </label>
           <label className="search-field">
-            <span className="field-label">Age band</span>
+            <span className="field-label">Looking for ages</span>
             <select name="age" defaultValue="adult">
               <option value="any">Anyone</option>
               {AGE_BANDS.map((band) => (
@@ -94,17 +96,19 @@ export default function JoinPlayPage() {
           </label>
           {error ? <p className="form-error">{error}</p> : null}
           <button className="btn-gradient" type="submit">
-            Save player profile
+            Save adult account
           </button>
         </form>
         <div className="demo-shortcuts">
-          <Link
-            href="/play"
+          <button
+            type="button"
             className="btn-sun"
-            onClick={() => signInDemo("player")}
+            onClick={() => {
+              void signInDemo("adult").then(() => window.location.assign("/play"));
+            }}
           >
             Continue as Alex
-          </Link>
+          </button>
           <Link href="/sign-in" style={{ color: "#3B96DC", fontWeight: 600 }}>
             I already have a demo login
           </Link>

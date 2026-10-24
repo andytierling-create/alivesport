@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect, useState } from "react";
 import { AccessTag, PhotoSlot, Tag } from "@/components/Media";
 import { useDemo } from "@/components/DemoProvider";
 import {
@@ -9,21 +10,64 @@ import {
   genderLabel,
   type Club,
 } from "@/data/clubs";
-import { isDemoEnabled } from "@/lib/demo-flag";
-import { findMergedClub } from "@/lib/demo-store";
+import { findListing } from "@/lib/catalog";
+import { isPlatformClientEnabled } from "@/lib/demo-flag";
+import {
+  formatMiles,
+  withDistances,
+  type GeoLocate,
+} from "@/lib/platform/geo";
+import { postcodeDistrict } from "@/lib/search";
 
 export function ClubDetailView({
   slug,
   initialClub,
   backHref = "/clubs",
+  fromPostcode = "SO14 3ZE",
 }: {
   slug: string;
   initialClub: Club | null;
   backHref?: string;
+  fromPostcode?: string;
 }) {
-  const { state } = useDemo();
+  const { publishedEvents, publicOrgs, lastNotice } = useDemo();
+  const [from, setFrom] = useState({
+    miles: null as number | null,
+    district: postcodeDistrict(fromPostcode),
+  });
   const club =
-    (isDemoEnabled() ? findMergedClub(slug, undefined, state) : null) ?? initialClub;
+    (isPlatformClientEnabled() ? findListing(slug, publishedEvents, publicOrgs) : null) ??
+    initialClub;
+  const clubLat = club?.lat;
+  const clubLng = club?.lng;
+
+  useEffect(() => {
+    if (clubLat === undefined || clubLng === undefined) return;
+    let cancelled = false;
+    void fetch(`/api/geo?postcode=${encodeURIComponent(fromPostcode)}`)
+      .then(async (response) => {
+        const data = (await response.json()) as GeoLocate & { error?: string };
+        if (!response.ok) throw new Error(data.error);
+        return data;
+      })
+      .then((origin) => {
+        if (cancelled) return;
+        setFrom({
+          miles: withDistances(
+            [{ lat: clubLat, lng: clubLng, distanceMiles: 0 }],
+            origin,
+          )[0]?.distanceMiles ?? null,
+          district: origin.district,
+        });
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setFrom({ miles: null, district: postcodeDistrict(fromPostcode) });
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [clubLat, clubLng, fromPostcode]);
 
   if (!club) {
     return (
@@ -33,11 +77,11 @@ export function ClubDetailView({
             ← Back to results
           </Link>
           <h1 className="display h1-clubs" style={{ marginTop: 28 }}>
-            That listing isn&apos;t in this browser.
+            That listing isn&apos;t on Alive Sport.
           </h1>
           <p className="hero-sub">
-            Demo clubs live in local storage. Reset the demo from the yellow
-            ribbon, or list a club from the desk.
+            Reset the demo from the yellow ribbon, or list a club from the
+            desk.
           </p>
         </article>
       </div>
@@ -47,7 +91,10 @@ export function ClubDetailView({
   return (
     <div className="page-shell">
       <article className="indent detail-panel" style={{ paddingTop: 64, paddingBottom: 96 }}>
-        <Link href={backHref} style={{ color: "#3B96DC", fontWeight: 600, textDecoration: "none" }}>
+        <Link
+          href={`${backHref}?postcode=${encodeURIComponent(fromPostcode)}`}
+          style={{ color: "#3B96DC", fontWeight: 600, textDecoration: "none" }}
+        >
           ← Back to results
         </Link>
         <div className="eyebrow" style={{ marginTop: 28 }}>
@@ -55,7 +102,10 @@ export function ClubDetailView({
         </div>
         <h1 className="display h1-clubs">{club.name}</h1>
         <p className="hero-sub" style={{ marginTop: 16 }}>
-          {club.venue} · {club.distanceMiles} miles from SO14
+          {club.venue}
+          {from.miles !== null
+            ? ` · ${formatMiles(from.miles)} from ${from.district}`
+            : null}
         </p>
         <PhotoSlot label="club photo 4:3" ratio="4 / 3" src={club.photo} />
 
@@ -120,15 +170,19 @@ export function ClubDetailView({
           site and they will tell you how to turn up.
         </p>
         <div className="contact-list">
-          <a href={`tel:${club.phone.replace(/\s/g, "")}`}>{club.phone}</a>
-          <a href={`mailto:${club.email}`}>{club.email}</a>
-          <a href={club.website} rel="noreferrer">
-            Club website
-          </a>
+          {club.phone ? (
+            <a href={`tel:${club.phone.replace(/\s/g, "")}`}>{club.phone}</a>
+          ) : null}
+          {club.email ? <a href={`mailto:${club.email}`}>{club.email}</a> : null}
+          {club.website ? (
+            <a href={club.website} rel="noreferrer">
+              Club or venue website
+            </a>
+          ) : null}
         </div>
-        {state.lastNotice && club.sessions.some((session) => session.demo) ? (
+        {lastNotice && club.sessions.some((session) => session.demo) ? (
           <p className="notify-note" style={{ marginTop: 28 }}>
-            {state.lastNotice}
+            {lastNotice}
           </p>
         ) : null}
       </article>

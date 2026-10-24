@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
-import { isDemoEnabled } from "@/lib/demo-flag";
+import { isPlatformEnabled } from "@/lib/demo-flag";
 
 export function requireDemo() {
-  if (!isDemoEnabled()) redirect("/");
+  if (!isPlatformEnabled()) redirect("/");
 }

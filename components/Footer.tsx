@@ -1,8 +1,9 @@
 import Link from "next/link";
-import { isDemoEnabled } from "@/lib/demo-flag";
+import { isDemoEnabled, isPlatformClientEnabled } from "@/lib/demo-flag";
 
 export function Footer() {
   const demo = isDemoEnabled();
+  const platform = isPlatformClientEnabled();
 
   return (
     <footer className="site-footer">
@@ -27,7 +28,8 @@ export function Footer() {
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
             <Link href="/about">About us</Link>
-            {demo ? <Link href="/join">Join the demo</Link> : null}
+            {platform ? <Link href="/join">{demo ? "Join the demo" : "Join"}</Link> : null}
+            {demo ? <Link href="/embed">Club snippet</Link> : null}
             <Link href="/suggest">Suggest a club</Link>
           </div>
         </div>
