@@ -6,10 +6,12 @@ import {
   acceptInviteOn,
   addCategoryOn,
   inviteAdultOn,
+  inviteCommitAllowed,
   isCategoryAdmin,
   leaveFamilyOn,
   patchFamilyOn,
   peekInvite,
+  publicInvite,
   seedCategories,
 } from "./family";
 import {
@@ -356,6 +358,81 @@ test("peekInvite returns the email without consuming the token", () => {
   assert.equal(peek?.needsAccount, false);
   const accepted = acceptInviteOn(invited.state, invited.invite.token, {});
   assert.equal(accepted.ok, true);
+});
+
+test("publicInvite omits the token from inviter-facing payloads", () => {
+  const { state, first, second } = twoAdults();
+  const invited = inviteAdultOn(state, first, second.email);
+  assert.equal(invited.ok, true);
+  if (!invited.ok) return;
+  const shown = publicInvite(invited.invite);
+  assert.equal(shown.email, second.email);
+  assert.equal("token" in shown, false);
+});
+
+test("last adult leave takes the partner's family searches as personal", () => {
+  const { state, first, second } = twoAdults();
+  const invited = inviteAdultOn(state, first, second.email);
+  assert.equal(invited.ok, true);
+  if (!invited.ok) return;
+  const accepted = acceptInviteOn(invited.state, invited.invite.token, {});
+  assert.equal(accepted.ok, true);
+  if (!accepted.ok) return;
+  const saved = saveSearchOn(accepted.state, {
+    email: second.email,
+    adultId: second.id,
+    q: "partner",
+    postcode: "SO15 1AA",
+    radius: "5",
+  });
+  assert.equal(saved.ok, true);
+  if (!saved.ok) return;
+  const partnerLeft = leaveFamilyOn(saved.state, second);
+  assert.equal(partnerLeft.ok, true);
+  if (!partnerLeft.ok) return;
+  const lastLeft = leaveFamilyOn(partnerLeft.state, first);
+  assert.equal(lastLeft.ok, true);
+  if (!lastLeft.ok) return;
+  const kept = searchesFor(first, lastLeft.state);
+  assert.ok(kept.some((item) => item.q === "partner" && !item.familyId));
+  assert.equal(
+    searchesFor(second, lastLeft.state).some((item) => item.q === "partner"),
+    false,
+  );
+});
+
+test("patchFamilyOn does not store a free-text child slot id", () => {
+  const { state, first, second } = twoAdults();
+  const invited = inviteAdultOn(state, first, second.email);
+  assert.equal(invited.ok, true);
+  if (!invited.ok) return;
+  const accepted = acceptInviteOn(invited.state, invited.invite.token, {});
+  assert.equal(accepted.ok, true);
+  if (!accepted.ok) return;
+  const patched = patchFamilyOn(accepted.state, first, {
+    childSlots: [{ id: "Sam Smith 2016-04-02", ageBand: "3-10", gender: "mixed" }],
+  });
+  assert.equal(patched.ok, true);
+  if (!patched.ok) return;
+  assert.equal(patched.family.childSlots[0].id.startsWith("slot-"), true);
+  assert.notEqual(patched.family.childSlots[0].id, "Sam Smith 2016-04-02");
+});
+
+test("patchFamilyOn rejects a child slot that is not an object", () => {
+  const { state, first } = twoAdults();
+  const invited = inviteAdultOn(state, first, "x@demo.alivesport");
+  assert.equal(invited.ok, true);
+  if (!invited.ok) return;
+  const patched = patchFamilyOn(invited.state, first, { childSlots: [null] });
+  assert.equal(patched.ok, false);
+  if (patched.ok) return;
+  assert.equal(patched.status, 400);
+});
+
+test("inviteCommitAllowed blocks an unsent invite in production", () => {
+  assert.equal(inviteCommitAllowed(false, "production"), false);
+  assert.equal(inviteCommitAllowed(true, "production"), true);
+  assert.equal(inviteCommitAllowed(false, "development"), true);
 });
 
 test("isCategoryAdmin matches ADMIN_EMAILS", () => {

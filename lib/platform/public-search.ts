@@ -27,6 +27,13 @@ export function fitsFamily(
   return true;
 }
 
+export function shouldStampFitsFamily(
+  family: { id: string } | null,
+  fit: { ageBands: unknown[]; categoryLabels: unknown[] },
+) {
+  return Boolean(family) || fit.ageBands.length > 0 || fit.categoryLabels.length > 0;
+}
+
 export function familyFitInput(
   adult: Adult,
   state: PlatformState,

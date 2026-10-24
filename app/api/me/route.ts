@@ -2,6 +2,7 @@ import {
   familyForAdult,
   incomingInviteForEmail,
   pendingInviteForFamily,
+  publicInvite,
 } from "@/lib/platform/family";
 import { eventsForOrg, lastNoticeFor, patchAdult, readPlatform, searchesFor } from "@/lib/platform/store";
 import { demoApiGuard } from "@/lib/platform/demo-api";
@@ -22,7 +23,12 @@ export async function GET(request: Request) {
       lastNotice: lastNoticeFor(actor.adult, state),
       savedSearches: searchesFor(actor.adult, state),
       family,
-      invite: family ? pendingInviteForFamily(family.id, state) : null,
+      invite: family
+        ? (() => {
+            const pending = pendingInviteForFamily(family.id, state);
+            return pending ? publicInvite(pending) : null;
+          })()
+        : null,
       incomingInvite: incomingInviteForEmail(actor.adult.email, state),
       categories: state.activityCategories,
     });

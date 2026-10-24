@@ -1,11 +1,24 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { inviteLink, sendInviteEmail } from "./mail";
+import { inviteLink, inviteOrigin, sendInviteEmail } from "./mail";
 
 test("inviteLink points at /join/family", () => {
   assert.equal(
     inviteLink("https://alive-sport-website.vercel.app", "inv_abc"),
     "https://alive-sport-website.vercel.app/join/family?token=inv_abc",
+  );
+});
+
+test("inviteOrigin in production uses the configured site URL, not forwarded host", () => {
+  const request = new Request("http://localhost:3000/api/family/invite", {
+    headers: { "x-forwarded-host": "evil.example", origin: "https://evil.example" },
+  });
+  assert.equal(
+    inviteOrigin(request, {
+      NODE_ENV: "production",
+      ALIVE_SITE_URL: "https://alive-sport-website.vercel.app",
+    }),
+    "https://alive-sport-website.vercel.app",
   );
 });
 

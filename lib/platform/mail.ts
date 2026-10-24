@@ -2,6 +2,20 @@ export function inviteLink(origin: string, token: string) {
   return `${origin.replace(/\/$/, "")}/join/family?token=${encodeURIComponent(token)}`;
 }
 
+export function inviteOrigin(
+  request: Request,
+  env: Record<string, string | undefined> = process.env,
+) {
+  const configured = (env.ALIVE_SITE_URL || env.NEXT_PUBLIC_SITE_URL || "").trim();
+  if (configured) return configured.replace(/\/$/, "");
+  if (env.NODE_ENV === "production") {
+    return "https://alive-sport-website.vercel.app";
+  }
+  const origin = request.headers.get("origin");
+  if (origin) return origin.replace(/\/$/, "");
+  return new URL(request.url).origin;
+}
+
 export async function sendInviteEmail(input: {
   to: string;
   link: string;

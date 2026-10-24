@@ -1,7 +1,12 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { publicEvents, publicOrg, seedPlatform } from "./store";
-import { buildPublicSearch, fitsFamily, publicSearchFor } from "./public-search";
+import {
+  buildPublicSearch,
+  fitsFamily,
+  publicSearchFor,
+  shouldStampFitsFamily,
+} from "./public-search";
 
 const LEEDS = {
   lat: 53.8003,
@@ -100,6 +105,17 @@ test("fitsFamily is false when categories are set and the sport is not one of th
   assert.equal(
     fitsFamily(listing, { ageBands: ["3-10"], categoryLabels: ["Swim"] }),
     false,
+  );
+});
+
+test("shouldStampFitsFamily is false when there is no family and no fit input", () => {
+  assert.equal(
+    shouldStampFitsFamily(null, { ageBands: [], categoryLabels: [] }),
+    false,
+  );
+  assert.equal(
+    shouldStampFitsFamily({ id: "fam-1" }, { ageBands: [], categoryLabels: [] }),
+    true,
   );
 });
 

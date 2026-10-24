@@ -91,14 +91,37 @@ export function detachFamilySearchesToAdult(
   familyId: string,
   adultId: string,
 ): PlatformState {
+  const adult = state.adults.find((item) => item.id === adultId);
   return {
     ...state,
     savedSearches: (state.savedSearches ?? []).map((search) => {
       if (search.familyId !== familyId) return search;
-      const { familyId: _drop, ...rest } = search;
-      return { ...rest, adultId: search.adultId ?? adultId };
+      return {
+        ...search,
+        familyId: undefined,
+        adultId,
+        email: adult?.email ?? search.email,
+      };
     }),
   };
+}
+
+export function publicInvite(invite: FamilyInvite) {
+  return {
+    id: invite.id,
+    familyId: invite.familyId,
+    email: invite.email,
+    invitedByAdultId: invite.invitedByAdultId,
+    createdAt: invite.createdAt,
+    expiresAt: invite.expiresAt,
+  };
+}
+
+export function inviteCommitAllowed(
+  sent: boolean,
+  env = process.env.NODE_ENV,
+) {
+  return sent || env !== "production";
 }
 
 function fail(status: number, error: string): Fail {
@@ -256,22 +279,26 @@ export function leaveFamilyOn(
   };
 }
 
-function parseChildSlots(raw: unknown): ChildSlot[] | Fail {
+function parseChildSlots(raw: unknown, knownIds: Set<string>): ChildSlot[] | Fail {
   if (!Array.isArray(raw)) return fail(400, "childSlots must be a list.");
   if (raw.length > MAX_CHILD_SLOTS) {
     return fail(400, `A family can have at most ${MAX_CHILD_SLOTS} child slots.`);
   }
   const slots: ChildSlot[] = [];
   for (const item of raw) {
-    const row = item as { id?: string; ageBand?: string; gender?: string };
+    if (item === null || typeof item !== "object" || Array.isArray(item)) {
+      return fail(400, "Each child slot must be an object.");
+    }
+    const row = item as { id?: unknown; ageBand?: string; gender?: string };
     if (row.ageBand !== "3-10" && row.ageBand !== "10-18") {
       return fail(400, "A child slot age band must be 3-10 or 10-18.");
     }
     if (row.gender !== "men" && row.gender !== "women" && row.gender !== "mixed") {
       return fail(400, "A child slot gender must be men, women, or mixed.");
     }
+    const requested = typeof row.id === "string" ? row.id.trim() : "";
     slots.push({
-      id: row.id?.trim() || newId("slot"),
+      id: knownIds.has(requested) ? requested : newId("slot"),
       ageBand: row.ageBand,
       gender: row.gender as Gender,
     });
@@ -292,7 +319,10 @@ export function patchFamilyOn(
   if (!family) return fail(404, "You are not in a family.");
   let childSlots = family.childSlots;
   if (Object.hasOwn(body, "childSlots")) {
-    const parsed = parseChildSlots(body.childSlots);
+    const parsed = parseChildSlots(
+      body.childSlots,
+      new Set(family.childSlots.map((slot) => slot.id)),
+    );
     if (!Array.isArray(parsed)) return parsed;
     childSlots = parsed;
   }
