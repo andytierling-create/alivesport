@@ -26,7 +26,8 @@ export async function POST(request: Request) {
     fromName: actor.adult.displayName,
   });
   if (!inviteCommitAllowed(mail.sent)) {
-    return jsonError(mail.error, 503);
+    const error = mail.sent ? "Email could not be sent." : mail.error;
+    return jsonError(error, 503);
   }
   await writePlatform(result.state);
   return jsonOk(

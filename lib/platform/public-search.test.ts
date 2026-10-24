@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
+import type { AgeBand } from "@/data/clubs";
 import { publicEvents, publicOrg, seedPlatform } from "./store";
 import {
   buildPublicSearch,
@@ -89,9 +90,9 @@ test("publicSearchFor does not fall back to SO14 when the postcode cannot be pla
   assert.match(result.error, /postcode/i);
 });
 
-const listing = {
+const listing: { sport: string; ageBands: AgeBand[] } = {
   sport: "Netball",
-  ageBands: ["3-10"] as const,
+  ageBands: ["3-10"],
 };
 
 test("fitsFamily is true when a child 3-10 slot matches a 3-10 listing", () => {
