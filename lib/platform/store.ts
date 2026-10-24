@@ -234,15 +234,28 @@ async function persist(state: PlatformState) {
   memory = state;
 }
 
+export function hydratePlatformState(state: PlatformState): PlatformState {
+  return {
+    ...state,
+    adults: state.adults.map((adult) => ({
+      ...adult,
+      categoryIds: adult.categoryIds ?? [],
+    })),
+    activityCategories: state.activityCategories.length
+      ? state.activityCategories
+      : seedCategories(),
+  };
+}
+
 export async function readPlatform(): Promise<PlatformState> {
   if (usesDatabaseUrl()) {
     const loaded = await loadFromNeon(sqlClient(), seedPlatform);
-    memory = loaded.state;
+    memory = hydratePlatformState(loaded.state);
     neonVersion = loaded.version;
-    return loaded.state;
+    return memory;
   }
-  if (memory) return memory;
-  memory = await loadFromFile(STORE_PATH, seedPlatform);
+  if (memory) return hydratePlatformState(memory);
+  memory = hydratePlatformState(await loadFromFile(STORE_PATH, seedPlatform));
   return memory;
 }
 

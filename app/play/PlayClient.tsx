@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { ClubsExplorer } from "@/components/ClubsExplorer";
 import { DemoBanner } from "@/components/DemoBanner";
 import { useDemo } from "@/components/DemoProvider";
+import { FamilyCard } from "@/components/FamilyCard";
 import { AGE_BANDS, GENDERS, type AgeBand, type Gender } from "@/data/clubs";
 
 function playSearchParams(
@@ -166,6 +167,7 @@ export function PlayClient() {
           </button>
         </form>
       </section>
+      <FamilyCard />
       <ClubsExplorer heading="Sessions near" noun="club" />
     </div>
   );

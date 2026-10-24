@@ -6,6 +6,7 @@ import { test } from "node:test";
 import {
   loadFromFile,
   loadFromNeon,
+  normaliseState,
   saveToFile,
   saveToNeon,
   usesDatabaseUrl,
@@ -36,6 +37,24 @@ function fakeSql(
     return handler(sql, values);
   };
 }
+
+test("normaliseState fills missing adult categoryIds", () => {
+  const state = normaliseState({
+    adults: [
+      {
+        id: "adult-x",
+        displayName: "X",
+        email: "x@demo.alivesport",
+        postcode: "SO14 3ZE",
+        lookingForAgeBands: [],
+        gender: "any",
+        accessible: false,
+        notifyOptIn: true,
+      } as never,
+    ],
+  });
+  assert.deepEqual(state.adults[0].categoryIds, []);
+});
 
 test("usesDatabaseUrl is false when the variable is missing or blank", () => {
   assert.equal(usesDatabaseUrl(undefined), false);

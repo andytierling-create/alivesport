@@ -55,6 +55,20 @@ export function incomingInviteForEmail(email: string, state: PlatformState) {
   );
 }
 
+export function peekInvite(
+  state: PlatformState,
+  token: string,
+  now = new Date(),
+) {
+  const invite = state.familyInvites.find((item) => item.token === token);
+  if (!invite) return null;
+  if (new Date(invite.expiresAt).getTime() <= now.getTime()) return null;
+  return {
+    email: invite.email,
+    needsAccount: !adultByEmail(state, invite.email),
+  };
+}
+
 export function attachSearchesToFamily(
   state: PlatformState,
   familyId: string,

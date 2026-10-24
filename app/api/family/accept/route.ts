@@ -1,7 +1,18 @@
-import { acceptInvite, issueToken } from "@/lib/platform/store";
+import { peekInvite } from "@/lib/platform/family";
+import { acceptInvite, issueToken, readPlatform } from "@/lib/platform/store";
 import { demoApiGuard } from "@/lib/platform/demo-api";
 import { corsPreflight, jsonError, jsonOk } from "@/lib/platform/http";
 import { writeSession } from "@/lib/platform/session";
+
+export async function GET(request: Request) {
+  const blocked = demoApiGuard();
+  if (blocked) return blocked;
+  const token = new URL(request.url).searchParams.get("token") ?? "";
+  const state = await readPlatform();
+  const peek = peekInvite(state, token);
+  if (!peek) return jsonError("That invite is not valid.", 400);
+  return jsonOk(peek);
+}
 
 export async function POST(request: Request) {
   const blocked = demoApiGuard();

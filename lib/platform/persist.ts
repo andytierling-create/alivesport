@@ -18,7 +18,10 @@ export function normaliseState(parsed: Partial<PlatformState> | null | undefined
   return {
     orgs: parsed?.orgs ?? [],
     events: parsed?.events ?? [],
-    adults: parsed?.adults ?? [],
+    adults: (parsed?.adults ?? []).map((adult) => ({
+      ...adult,
+      categoryIds: adult.categoryIds ?? [],
+    })),
     credentials: parsed?.credentials ?? [],
     lastNotice: parsed?.lastNotice !== undefined ? parsed.lastNotice : null,
     savedSearches: parsed?.savedSearches ?? [],

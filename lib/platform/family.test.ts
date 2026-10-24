@@ -9,9 +9,16 @@ import {
   isCategoryAdmin,
   leaveFamilyOn,
   patchFamilyOn,
+  peekInvite,
   seedCategories,
 } from "./family";
-import { registerAdultOn, saveSearchOn, searchesFor, seedPlatform } from "./store";
+import {
+  hydratePlatformState,
+  registerAdultOn,
+  saveSearchOn,
+  searchesFor,
+  seedPlatform,
+} from "./store";
 
 test("normaliseState fills empty family collections and seed categories match the spec labels", () => {
   const state = normaliseState({});
@@ -311,6 +318,15 @@ test("last adult leave returns family searches to that adult as personal", () =>
   assert.ok(listed.some((item) => item.q === "kept" && !item.familyId));
 });
 
+test("hydratePlatformState seeds categories when the list is empty", () => {
+  const seeded = seedPlatform();
+  const next = hydratePlatformState({ ...seeded, activityCategories: [] });
+  assert.deepEqual(
+    next.activityCategories.map((item) => item.label),
+    SEED_CATEGORY_LABELS,
+  );
+});
+
 test("addCategoryOn appends a label Andy can add", () => {
   const seeded = seedPlatform();
   const added = addCategoryOn(seeded, "Martial arts");
@@ -327,6 +343,19 @@ test("addCategoryOn rejects a blank label", () => {
   assert.equal(added.ok, false);
   if (added.ok) return;
   assert.equal(added.status, 400);
+});
+
+test("peekInvite returns the email without consuming the token", () => {
+  const { state, first, second } = twoAdults();
+  const invited = inviteAdultOn(state, first, second.email);
+  assert.equal(invited.ok, true);
+  if (!invited.ok) return;
+  const peek = peekInvite(invited.state, invited.invite.token);
+  assert.ok(peek);
+  assert.equal(peek?.email, second.email);
+  assert.equal(peek?.needsAccount, false);
+  const accepted = acceptInviteOn(invited.state, invited.invite.token, {});
+  assert.equal(accepted.ok, true);
 });
 
 test("isCategoryAdmin matches ADMIN_EMAILS", () => {
