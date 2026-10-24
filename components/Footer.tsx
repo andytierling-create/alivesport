@@ -1,6 +1,9 @@
 import Link from "next/link";
+import { isDemoEnabled } from "@/lib/demo-flag";
 
 export function Footer() {
+  const demo = isDemoEnabled();
+
   return (
     <footer className="site-footer">
       <div style={{ display: "flex", gap: 44, flexWrap: "wrap" }}>
@@ -16,7 +19,7 @@ export function Footer() {
           <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
             <Link href="/clubs">Find a club</Link>
             <Link href="/wellness">Wellness</Link>
-            <Link href="/clubs">What&apos;s on</Link>
+            <Link href="/whats-on">What&apos;s on</Link>
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
             <Link href="/for-clubs">For clubs</Link>
@@ -24,6 +27,7 @@ export function Footer() {
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
             <Link href="/about">About us</Link>
+            {demo ? <Link href="/join">Join the demo</Link> : null}
             <Link href="/suggest">Suggest a club</Link>
           </div>
         </div>

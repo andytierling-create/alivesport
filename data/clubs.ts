@@ -48,7 +48,9 @@ export type Club = {
   phone: string;
   email: string;
   website: string;
-  sessions: { day: string; time: string; price: string }[];
+  sessions: { day: string; time: string; price: string; title?: string; demo?: boolean }[];
+  /** Drop a file in public/photos and set this to `/photos/your-file.jpg`. */
+  photo?: string;
 };
 
 const ACCESS_FLAG_LABELS: Record<string, string> = {

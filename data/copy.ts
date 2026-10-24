@@ -1,6 +1,11 @@
 /**
  * Site copy kept in one place so placeholder wording is easy to swap.
  * Values marked PLACEHOLDER are draft until Andy signs them off.
+ *
+ * Still to confirm:
+ * - Setup time 10 vs ~20 minutes (CLUB_SETUP_COPY and the For Clubs price card).
+ * - Keep Leaflet + OpenStreetMap, or switch to Mapbox / Google.
+ * - Final mission statement and Built for everyone box wording.
  */
 
 /** PLACEHOLDER — homepage hero mission. */

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Bricolage_Grotesque, Instrument_Sans } from "next/font/google";
+import { DemoProvider } from "@/components/DemoProvider";
 import { Footer } from "@/components/Footer";
 import { Header } from "@/components/Header";
 import "./globals.css";
@@ -32,9 +33,11 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       className={`${bricolage.variable} ${instrument.variable} h-full antialiased`}
     >
       <body>
-        <Header />
-        {children}
-        <Footer />
+        <DemoProvider>
+          <Header />
+          {children}
+          <Footer />
+        </DemoProvider>
       </body>
     </html>
   );

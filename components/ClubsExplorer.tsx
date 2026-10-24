@@ -5,6 +5,8 @@ import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useMemo, useState } from "react";
 import { AGE_BANDS, GENDERS, clubs, listingTags, type Club } from "@/data/clubs";
+import { clubListings } from "@/lib/catalog";
+import { isDemoEnabled } from "@/lib/demo-flag";
 import {
   FILTERS,
   offerColor,
@@ -15,6 +17,7 @@ import {
   type FilterId,
   type SortId,
 } from "@/lib/search";
+import { useDemo } from "./DemoProvider";
 import { AccessTag, PhotoSlot, Tag } from "./Media";
 
 const ClubsMap = dynamic(() => import("./ClubsMap"), {
@@ -47,13 +50,22 @@ export function ClubsExplorer({
   const [mapOpen, setMapOpen] = useState(true);
   const [saved, setSaved] = useState(false);
   const [selectedSlug, setSelectedSlug] = useState<string | null>(null);
+  const { state: demoState } = useDemo();
 
   const state = useMemo(
     () => parseSearch(Object.fromEntries(searchParams.entries())),
     [searchParams],
   );
 
-  const results = useMemo(() => searchListings(state, listings), [state, listings]);
+  const source = useMemo(
+    () =>
+      detailBasePath === "/clubs" && isDemoEnabled()
+        ? clubListings(demoState)
+        : listings,
+    [detailBasePath, listings, demoState],
+  );
+
+  const results = useMemo(() => searchListings(state, source), [state, source]);
 
   function update(next: Record<string, string | undefined>) {
     const params = new URLSearchParams(searchParams.toString());
@@ -269,7 +281,7 @@ export function ClubsExplorer({
                 }}
                 onMouseEnter={() => setSelectedSlug(club.slug)}
               >
-                <PhotoSlot label="1:1" className="result-thumb" />
+                <PhotoSlot label="1:1" className="result-thumb" src={club.photo} />
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div
                     style={{
@@ -292,6 +304,25 @@ export function ClubsExplorer({
                       >
                         {club.venue} · {club.distanceMiles} miles · {club.days}
                       </div>
+                      {club.sessions.some((session) => session.demo) ? (
+                        <div
+                          style={{
+                            fontSize: 13,
+                            color: "#FFC94D",
+                            marginTop: 6,
+                            fontWeight: 600,
+                          }}
+                        >
+                          Posted:{" "}
+                          {club.sessions
+                            .filter((session) => session.demo)
+                            .map(
+                              (session) =>
+                                `${session.title ?? session.day} · ${session.day.slice(0, 3)} ${session.time}`,
+                            )
+                            .join(" · ")}
+                        </div>
+                      ) : null}
                     </div>
                     <div style={{ textAlign: "right", flex: "none" }}>
                       <div

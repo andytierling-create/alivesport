@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { saveSuggestion } from "@/lib/suggestions";
 
 export function SuggestForm() {
   const [sent, setSent] = useState(false);
@@ -8,7 +9,8 @@ export function SuggestForm() {
   if (sent) {
     return (
       <p className="hero-sub" style={{ marginTop: 0 }}>
-        Thanks. We&apos;ll chase them. If they&apos;re already on a list we
+        Thanks. That name is saved in this browser for now. When the live inbox
+        is ready, we&apos;ll chase them. If they&apos;re already on a list we
         haven&apos;t published yet, this bumps them up.
       </p>
     );
@@ -20,6 +22,12 @@ export function SuggestForm() {
       style={{ flexDirection: "column", transform: "none", maxWidth: 560 }}
       onSubmit={(event) => {
         event.preventDefault();
+        const form = new FormData(event.currentTarget);
+        saveSuggestion({
+          name: String(form.get("name") || ""),
+          area: String(form.get("area") || ""),
+          contact: String(form.get("contact") || ""),
+        });
         setSent(true);
       }}
     >

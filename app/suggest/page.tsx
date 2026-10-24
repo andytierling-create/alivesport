@@ -12,8 +12,8 @@ export default function SuggestPage() {
         <div className="eyebrow">One line is enough</div>
         <h1 className="display h1-clubs">Know a club that should be on here?</h1>
         <p className="hero-sub">
-          Tell us the name and the area. We&apos;ll do the chasing. No account,
-          and we won&apos;t add a listing until someone at the club says yes.
+          Tell us the name and the area. For now that stays in this browser.
+          We won&apos;t add a listing until someone at the club says yes.
         </p>
         <SuggestForm />
       </section>

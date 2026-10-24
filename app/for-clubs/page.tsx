@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { CLUB_SETUP_COPY } from "@/data/copy";
+import { isDemoEnabled } from "@/lib/demo-flag";
 
 export const metadata: Metadata = {
   title: "For clubs",
@@ -75,7 +76,7 @@ export default function ForClubsPage() {
               You add your sessions once. We keep them findable. No rewriting
               your website, no commission, no extra app.
             </p>
-            <Link href="/suggest" className="btn-navy">
+            <Link href={isDemoEnabled() ? "/join/club" : "/suggest"} className="btn-navy">
               Register your club
             </Link>
           </div>

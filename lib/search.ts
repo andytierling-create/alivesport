@@ -69,7 +69,18 @@ export function postcodeDistrict(postcode: string) {
 function matchesQuery(club: Club, q: string) {
   if (!q.trim()) return true;
   const needle = q.toLowerCase();
-  return [club.name, club.sport, club.venue, ...club.tags.map((tag) => tag.label)]
+  return [
+    club.name,
+    club.sport,
+    club.venue,
+    club.days,
+    ...club.tags.map((tag) => tag.label),
+    ...club.sessions.flatMap((session) => [
+      session.title ?? "",
+      session.day,
+      session.time,
+    ]),
+  ]
     .join(" ")
     .toLowerCase()
     .includes(needle);

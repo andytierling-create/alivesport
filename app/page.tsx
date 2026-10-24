@@ -2,7 +2,7 @@ import Link from "next/link";
 import { AthleteFigures, GroupMark } from "@/components/AthleteFigures";
 import { HomeSearch, PopularChips } from "@/components/HomeSearch";
 import { PhotoSlot, Tag } from "@/components/Media";
-import { featuredSessions } from "@/data/clubs";
+import { clubs, featuredSessions, getClub } from "@/data/clubs";
 import {
   CLUB_SETUP_COPY,
   GROUP_CARDS,
@@ -13,6 +13,9 @@ import {
   USER_NOTIFICATIONS_NOTE,
   WHY_SPORT_MATTERS,
 } from "@/data/copy";
+import { listingInventory } from "@/lib/catalog";
+
+const inventory = listingInventory(clubs);
 
 export default function HomePage() {
   return (
@@ -74,24 +77,24 @@ export default function HomePage() {
         <div className="skew-inner">
           <div>
             <span className="stat-num" style={{ color: "#FF2FA7" }}>
-              142
+              {inventory.listed}
             </span>
             <span className="stat-label">
-              clubs listed across Southampton & Hampshire
+              sample clubs listed across Southampton & Hampshire
             </span>
           </div>
           <div>
             <span className="stat-num" style={{ color: "#3B96DC" }}>
-              38
+              {inventory.freeTasters}
             </span>
-            <span className="stat-label">free taster sessions this month</span>
+            <span className="stat-label">sample listings with a free taster</span>
           </div>
           <div>
             <span className="stat-num" style={{ color: "#FFC94D" }}>
-              61
+              {inventory.accessible}
             </span>
             <span className="stat-label">
-              marked accessible to wheelchair users
+              sample listings marked accessible
             </span>
           </div>
         </div>
@@ -131,14 +134,17 @@ export default function HomePage() {
           <h2 className="h2 h2-sm" style={{ margin: 0 }}>
             On this week
           </h2>
-          <Link href="/clubs" style={{ fontSize: 14, fontWeight: 600, color: "#3B96DC", textDecoration: "none" }}>
-            See all 214 sessions →
+          <Link href="/whats-on" style={{ fontSize: 14, fontWeight: 600, color: "#3B96DC", textDecoration: "none" }}>
+            See all {inventory.sessions} club sessions →
           </Link>
         </div>
         <div className="session-grid">
           {featuredSessions.map((session) => (
             <Link key={session.slug} href={`/clubs/${session.slug}`} className="session-card">
-              <PhotoSlot label="club photo 4:3" />
+              <PhotoSlot
+                label="club photo 4:3"
+                src={getClub(session.slug)?.photo}
+              />
               <div className="card-body">
                 <div className="meta-sun">{session.when}</div>
                 <div className="card-title">{session.title}</div>
