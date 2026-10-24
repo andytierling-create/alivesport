@@ -73,6 +73,7 @@ export type SavedSearch = {
   id: string;
   email: string;
   adultId?: string;
+  familyId?: string;
   q: string;
   postcode: string;
   radius: string;
@@ -84,6 +85,35 @@ export type SavedSearch = {
   createdAt: string;
 };
 
+export type ChildSlot = {
+  id: string;
+  ageBand: "3-10" | "10-18";
+  gender: Gender;
+};
+
+export type Family = {
+  id: string;
+  adultIds: string[];
+  childSlots: ChildSlot[];
+  categoryIds: string[];
+};
+
+export type FamilyInvite = {
+  id: string;
+  familyId: string;
+  email: string;
+  token: string;
+  invitedByAdultId: string;
+  createdAt: string;
+  expiresAt: string;
+};
+
+export type ActivityCategory = {
+  id: string;
+  slug: string;
+  label: string;
+};
+
 export type Adult = {
   id: string;
   displayName: string;
@@ -93,6 +123,7 @@ export type Adult = {
   gender: Gender | "any";
   accessible: boolean;
   notifyOptIn: boolean;
+  categoryIds: string[];
 };
 
 export type Credential = {
@@ -122,6 +153,9 @@ export type PlatformState = {
   lastNotice: string | null;
   savedSearches: SavedSearch[];
   tokens: AccessToken[];
+  families: Family[];
+  familyInvites: FamilyInvite[];
+  activityCategories: ActivityCategory[];
 };
 
 export type SaveSearchInput = {

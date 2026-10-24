@@ -22,6 +22,9 @@ function emptyState(): PlatformState {
     lastNotice: null,
     savedSearches: [],
     tokens: [],
+    families: [],
+    familyInvites: [],
+    activityCategories: [],
   };
 }
 

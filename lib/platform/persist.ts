@@ -23,6 +23,9 @@ export function normaliseState(parsed: Partial<PlatformState> | null | undefined
     lastNotice: parsed?.lastNotice !== undefined ? parsed.lastNotice : null,
     savedSearches: parsed?.savedSearches ?? [],
     tokens: parsed?.tokens ?? [],
+    families: parsed?.families ?? [],
+    familyInvites: parsed?.familyInvites ?? [],
+    activityCategories: parsed?.activityCategories ?? [],
   };
 }
 

@@ -13,6 +13,7 @@ import {
 } from "@/lib/platform/persist";
 import { thisWeekStartsAt } from "@/lib/platform/dates";
 import { nextStartsAt } from "@/lib/schedule";
+import { seedCategories } from "@/lib/platform/family";
 import {
   CHILD_SHAPED_KEYS,
   DEMO_ADULT,
@@ -170,6 +171,7 @@ export function seedPlatform(now = new Date()): PlatformState {
     gender: "any",
     accessible: false,
     notifyOptIn: true,
+    categoryIds: [],
   };
 
   credentials.push(
@@ -195,6 +197,9 @@ export function seedPlatform(now = new Date()): PlatformState {
     lastNotice: "1 adult in this demo would be told — if this were live.",
     savedSearches: [],
     tokens: [],
+    families: [],
+    familyInvites: [],
+    activityCategories: seedCategories(),
   };
 }
 
@@ -714,6 +719,7 @@ export function registerAdultOn(
     gender: input.gender ?? "any",
     accessible: Boolean(input.accessible),
     notifyOptIn: input.notifyOptIn ?? true,
+    categoryIds: [],
   };
   return {
     ok: true as const,
