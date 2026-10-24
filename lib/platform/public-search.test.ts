@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { publicEvents, publicOrg, seedPlatform } from "./store";
-import { buildPublicSearch, publicSearchFor } from "./public-search";
+import { buildPublicSearch, fitsFamily, publicSearchFor } from "./public-search";
 
 const LEEDS = {
   lat: 53.8003,
@@ -83,3 +83,33 @@ test("publicSearchFor does not fall back to SO14 when the postcode cannot be pla
   assert.equal(result.status, 404);
   assert.match(result.error, /postcode/i);
 });
+
+const listing = {
+  sport: "Netball",
+  ageBands: ["3-10"] as const,
+};
+
+test("fitsFamily is true when a child 3-10 slot matches a 3-10 listing", () => {
+  assert.equal(
+    fitsFamily(listing, { ageBands: ["3-10"], categoryLabels: [] }),
+    true,
+  );
+});
+
+test("fitsFamily is false when categories are set and the sport is not one of them", () => {
+  assert.equal(
+    fitsFamily(listing, { ageBands: ["3-10"], categoryLabels: ["Swim"] }),
+    false,
+  );
+});
+
+test("buildPublicSearch without a family does not require fitsFamily", () => {
+  const seeded = seedPlatform();
+  const search = buildPublicSearch({
+    events: publicEvents(seeded),
+    orgs: seeded.orgs.map(publicOrg),
+  });
+  assert.ok(search.orgs.every((org) => org.fitsFamily === undefined));
+  assert.ok(search.events.every((event) => event.fitsFamily === undefined));
+});
+

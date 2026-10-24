@@ -1,10 +1,53 @@
 import { milesBetween, type GeoLocate, locatePostcode } from "@/lib/platform/geo";
 import { parseRadius, type SearchRadius } from "@/lib/search";
+import type { AgeBand } from "@/data/clubs";
 import type {
+  Adult,
+  Family,
   PlatformEvent,
+  PlatformState,
   PublicOrg,
   PublicSearch,
 } from "@/lib/platform/types";
+
+export function fitsFamily(
+  item: { sport?: string; ageBands: AgeBand[] },
+  input: { ageBands: AgeBand[]; categoryLabels: string[] },
+) {
+  if (input.ageBands.length) {
+    const overlap = item.ageBands.some((band) => input.ageBands.includes(band));
+    if (!overlap) return false;
+  }
+  if (input.categoryLabels.length) {
+    const sport = (item.sport ?? "").toLowerCase();
+    if (!input.categoryLabels.some((label) => label.toLowerCase() === sport)) {
+      return false;
+    }
+  }
+  return true;
+}
+
+export function familyFitInput(
+  adult: Adult,
+  state: PlatformState,
+  family: Family | null,
+) {
+  const categoryIds = new Set([
+    ...(family?.categoryIds ?? []),
+    ...adult.categoryIds,
+  ]);
+  return {
+    ageBands: Array.from(
+      new Set([
+        ...(family?.childSlots.map((slot) => slot.ageBand) ?? []),
+        ...adult.lookingForAgeBands,
+      ]),
+    ),
+    categoryLabels: state.activityCategories
+      .filter((item) => categoryIds.has(item.id))
+      .map((item) => item.label),
+  };
+}
 
 function matchesQuery(haystack: string, q: string) {
   if (!q.trim()) return true;

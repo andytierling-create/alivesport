@@ -57,9 +57,15 @@ export type PlatformEvent = {
   seriesId?: string;
 };
 
-export type PublicSearchEvent = PlatformEvent & { distanceMiles: number | null };
+export type PublicSearchEvent = PlatformEvent & {
+  distanceMiles: number | null;
+  fitsFamily?: boolean;
+};
 
-export type PublicSearchOrg = PublicOrg & { distanceMiles: number | null };
+export type PublicSearchOrg = PublicOrg & {
+  distanceMiles: number | null;
+  fitsFamily?: boolean;
+};
 
 export type PublicSearch = {
   origin: GeoLocate | null;
