@@ -4,7 +4,9 @@ import { normaliseState } from "./persist";
 import {
   SEED_CATEGORY_LABELS,
   acceptInviteOn,
+  addCategoryOn,
   inviteAdultOn,
+  isCategoryAdmin,
   leaveFamilyOn,
   patchFamilyOn,
   seedCategories,
@@ -307,6 +309,32 @@ test("last adult leave returns family searches to that adult as personal", () =>
   if (!left.ok) return;
   const listed = searchesFor(first, left.state);
   assert.ok(listed.some((item) => item.q === "kept" && !item.familyId));
+});
+
+test("addCategoryOn appends a label Andy can add", () => {
+  const seeded = seedPlatform();
+  const added = addCategoryOn(seeded, "Martial arts");
+  assert.equal(added.ok, true);
+  if (!added.ok) return;
+  assert.equal(added.category.label, "Martial arts");
+  assert.equal(added.category.slug, "martial-arts");
+  assert.ok(added.state.activityCategories.some((item) => item.slug === "martial-arts"));
+});
+
+test("addCategoryOn rejects a blank label", () => {
+  const seeded = seedPlatform();
+  const added = addCategoryOn(seeded, "   ");
+  assert.equal(added.ok, false);
+  if (added.ok) return;
+  assert.equal(added.status, 400);
+});
+
+test("isCategoryAdmin matches ADMIN_EMAILS", () => {
+  assert.equal(
+    isCategoryAdmin("andy@example.com", "andy@example.com, other@x.com"),
+    true,
+  );
+  assert.equal(isCategoryAdmin("nope@example.com", "andy@example.com, other@x.com"), false);
 });
 
 

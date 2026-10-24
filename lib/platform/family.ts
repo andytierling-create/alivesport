@@ -1,4 +1,4 @@
-import { childShapedKeysIn, newId, registerAdultOn } from "@/lib/platform/store";
+import { childShapedKeysIn, newId, registerAdultOn, slugify } from "@/lib/platform/store";
 import type {
   ActivityCategory,
   Adult,
@@ -300,6 +300,46 @@ export function patchFamilyOn(
     state: {
       ...state,
       families: state.families.map((item) => (item.id === family.id ? next : item)),
+    },
+  };
+}
+
+export function isCategoryAdmin(
+  email: string,
+  adminEmails = process.env.ADMIN_EMAILS,
+) {
+  const needle = email.trim().toLowerCase();
+  if (!needle || !adminEmails) return false;
+  return adminEmails
+    .split(",")
+    .map((item) => item.trim().toLowerCase())
+    .filter(Boolean)
+    .includes(needle);
+}
+
+export function addCategoryOn(
+  state: PlatformState,
+  label: string,
+):
+  | { ok: true; category: ActivityCategory; state: PlatformState }
+  | Fail {
+  const trimmed = label.trim();
+  if (!trimmed) return fail(400, "A category label is required.");
+  const slug = slugify(trimmed);
+  if (state.activityCategories.some((item) => item.slug === slug)) {
+    return fail(409, "That category already exists.");
+  }
+  const category: ActivityCategory = {
+    id: `cat-${slug}`,
+    slug,
+    label: trimmed,
+  };
+  return {
+    ok: true,
+    category,
+    state: {
+      ...state,
+      activityCategories: [...state.activityCategories, category],
     },
   };
 }
